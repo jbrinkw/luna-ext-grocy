@@ -1,17 +1,16 @@
 """Grocy extension tools for Luna.
 
-All tools follow the Luna tool schema:
-- Names: GROCY_{GET|UPDATE|ACTION}_VerbNoun
-- Pydantic-validated inputs
-- Return: (success: bool, content: str)
-- Docstrings: summary, Example Prompt, Example Response, Example Args
+All tools follow the new spec:
+- Pydantic validation for inputs
+- Return (bool, str) tuples
+- Proper docstrings with Example Prompt/Response/Args
+- Naming convention: GROCY_{GET|UPDATE|ACTION}_VerbNoun
 """
-
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List, Tuple
 import json
 import sys
+from typing import Optional, Dict, Any, List, Tuple
 from pathlib import Path
+from pydantic import BaseModel, Field
 
 # Add lib to path for imports
 _lib_path = Path(__file__).parent.parent / "lib"
@@ -32,9 +31,7 @@ from integrations.macros import get_day_macros, get_recent_days, create_temp_ite
 SYSTEM_PROMPT = """The user has access to Grocy inventory management tools for tracking food, recipes, meal plans, and shopping lists."""
 
 
-# ============================================================================
-# INVENTORY TOOLS
-# ============================================================================
+# ---- Inventory Tools ----
 
 class GROCY_GET_InventoryArgs(BaseModel):
     """Arguments for getting inventory."""
@@ -148,9 +145,7 @@ def GROCY_UPDATE_ConsumeProduct(product_id: int, quantity: float, add_to_meal_pl
         return (False, f"Error consuming product: {e}")
 
 
-# ============================================================================
-# PRODUCT TOOLS
-# ============================================================================
+# ---- Product Tools ----
 
 class GROCY_GET_ProductsArgs(BaseModel):
     """Arguments for getting products list."""
@@ -262,9 +257,7 @@ def GROCY_ACTION_CreatePlaceholder(name: str, estimated_calories: float,
         return (False, f"Error creating placeholder: {e}")
 
 
-# ============================================================================
-# SHOPPING LIST TOOLS
-# ============================================================================
+# ---- Shopping List Tools ----
 
 class GROCY_GET_ShoppingListArgs(BaseModel):
     """Arguments for getting shopping list."""
@@ -363,9 +356,7 @@ def GROCY_ACTION_ClearShoppingList(shopping_list_id: int = 1) -> Tuple[bool, str
         return (False, f"Error clearing shopping list: {e}")
 
 
-# ============================================================================
-# MEAL PLAN TOOLS
-# ============================================================================
+# ---- Meal Plan Tools ----
 
 class GROCY_GET_MealPlanArgs(BaseModel):
     """Arguments for getting meal plan."""
@@ -472,9 +463,7 @@ def GROCY_ACTION_DeleteMealPlanEntry(entry_id: int) -> Tuple[bool, str]:
         return (False, f"Error deleting meal plan entry: {e}")
 
 
-# ============================================================================
-# RECIPE TOOLS
-# ============================================================================
+# ---- Recipe Tools ----
 
 class GROCY_GET_RecipesArgs(BaseModel):
     """Arguments for getting recipes."""
@@ -598,9 +587,7 @@ def GROCY_GET_CookableRecipes() -> Tuple[bool, str]:
         return (False, f"Error getting cookable recipes: {e}")
 
 
-# ============================================================================
-# MACRO TRACKING TOOLS
-# ============================================================================
+# ---- Macro Tracking Tools ----
 
 class GROCY_GET_DayMacrosArgs(BaseModel):
     """Arguments for getting day macros."""
@@ -698,9 +685,7 @@ def GROCY_ACTION_SetProductPrice(product_id: int, price: float) -> Tuple[bool, s
         return (False, f"Error setting product price: {e}")
 
 
-# ============================================================================
-# TOOLS LIST
-# ============================================================================
+# ---- Export Tools ----
 
 TOOLS = [
     # Inventory
@@ -738,7 +723,3 @@ TOOLS = [
     GROCY_ACTION_DeleteTempItem,
     GROCY_ACTION_SetProductPrice,
 ]
-
-
-
-
