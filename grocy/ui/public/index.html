@@ -1,0 +1,3092 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grocy IO Wizard</title>
+    <style>
+      :root {
+        --accent: #d33;
+        --accent-dark: #a11;
+        --bg: #f7f7f9;
+        --key: #fff;
+        --key-border: #ddd;
+        --key-hover: #f0f0f0;
+        --active: #1e66f5;
+      }
+      body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 16px; background: #fff; color: #111; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+      h1 { margin: 8px 0 12px; font-size: 20px; font-weight: 600; }
+      .status { margin: 8px 0 12px; color: #444; min-height: 20px; }
+      .headerBar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; margin-bottom: 8px; }
+      .headerBar .rightActions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+      .headerBar .actionBtn { padding: 16px 20px; border: 1px solid #ccc; background: #fff; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px; white-space: nowrap; }
+      .headerBar .actionBtn:hover { background: #f5f5f5; }
+      .mealPlanToggle[data-enabled="false"] { background: #d33; color: #fff; border-color: #a11; }
+      .mealPlanToggle[data-enabled="false"]:hover { background: #a11; }
+      .mealPlanToggle[data-enabled="true"] { background: #2f9e44; color: #fff; border-color: #2b8a3e; }
+      .mealPlanToggle[data-enabled="true"]:hover { background: #2b8a3e; }
+      .modeButtons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+      .modeBtn { padding: 14px 16px; border: 1px solid #ccc; background: #fff; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; font-size: 16px; }
+      .modeBtn.active { background: #222; color: #fff; border-color: #222; }
+      .app { display: grid; grid-template-columns: 1.5fr 2.5fr; gap: 16px; align-items: stretch; flex: 1 1 auto; min-height: 0; height: auto; }
+      .panel { background: var(--bg); border: 1px solid #eee; border-radius: 8px; padding: 12px; height: 100%; min-height: 0; display: flex; flex-direction: column; }
+      .queuePanel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; height: 100%; }
+      .queueHeader { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+      .logHeader { display: flex; align-items: center; justify-content: flex-end; margin: 6px 0 8px; }
+      .logFilterButtons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+      .queueHeader input[type="text"] { flex: 1; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; }
+      .queueList { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 4px; max-height: none; }
+      .queueItem { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 4px 8px; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; }
+      .queueItem.red { border-color: var(--accent); background: #ffe9e9; }
+      .queueItem.active { outline: 2px solid var(--active); }
+      .queueItem .name { grid-column: 1; grid-row: 1; font-weight: 600; }
+      .queueItem .details { grid-column: 1; grid-row: 2; font-size: 12px; color: #666; }
+      .queueItem .right { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; font-size: 16px; font-weight: 600; color: #000; font-variant-numeric: tabular-nums; }
+
+      .keypadPanel { display: grid; grid-template-columns: 110px 1fr; grid-template-rows: auto auto 1fr auto; gap: 10px; min-height: 0; height: 100%; }
+      .keypadPanel .modeButtons { grid-column: 1; grid-row: 1 / -1; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+      .keypadPanel .modeButtons .modeBtn { flex: 1 1 0; }
+      .keypadPanel .activeBar, .keypadPanel .screen, .keypadPanel .keysGrid, .keypadPanel .completeBtn { grid-column: 2; }
+      .activeBar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .activeName { font-size: 24px; font-weight: 800; padding: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .modeBtn.small { padding: 8px 12px; font-size: 14px; border-radius: 8px; }
+      .screen { display: flex; align-items: center; gap: 8px; }
+      .screen input { flex: 1; font-size: 42px; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; text-align: right; }
+      .screen .units { font-size: 16px; color: #666; }
+
+      .keysGrid { display: grid; grid-template-columns: repeat(3, 1fr) 0.5fr; grid-auto-rows: minmax(80px, 1fr); gap: 10px; }
+      .key { background: var(--key); border: 1px solid var(--key-border); border-radius: 10px; font-size: 28px; font-weight: 700; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: center; }
+      .key:hover { background: var(--key-hover); }
+      .key.op { background: #fef3f3; border-color: #f2d1d1; }
+      .key.op:hover { background: #fde7e7; }
+      .key.unitToggle { grid-column: 4; grid-row: 1 / span 4; background: #e3f2fd; border-color: #90caf9; font-size: 14px; font-weight: 600; padding: 8px; line-height: 1.3; }
+      .key.unitToggle:not(:disabled):hover { background: #bbdefb; }
+      .key.unitToggle:disabled { opacity: 0.4; cursor: not-allowed; background: #f5f5f5; }
+      /* specific key slots are styled by position; no extra styles needed */
+      
+      /* Badge styling */
+      .badge { background: #2f9e44; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 4px; }
+      .badge.new { background: #1e88e5; }
+      .badge.mp { background: #2f9e44; }
+
+      /* Hidden debug areas */
+      #logs, #modlogs { display: none; }
+
+      .completeBtn { margin-top: 4px; padding: 24px; font-size: 18px; font-weight: 700; color: #fff; background: #2f9e44; border: 1px solid #2b8a3e; border-radius: 10px; cursor: pointer; }
+      .completeBtn:hover { background: #2b8a3e; }
+
+      /* Grocy Home Styles */
+      .grocyHomeView { display: none; flex-direction: column; gap: 16px; overflow-y: auto; padding: 8px; }
+      .currentDayCard { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+      .dayHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 18px; font-weight: 600; }
+      .macroGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 12px; }
+      .macroBox { background: #f7f7f9; border: 1px solid #eee; border-radius: 6px; padding: 12px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+      .macroBox label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; text-transform: uppercase; }
+      .macroBox span { font-size: 24px; font-weight: 700; color: #111; }
+      .macroBox small { display: block; margin-top: 2px; }
+      .statusRow { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: #555; }
+      .statusRow strong { color: #111; }
+      
+      .tempItemsSection { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+      .tempItemsSection h3 { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+      .tempItemForm { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 12px; }
+      .tempItemForm input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+      .tempItemForm button { padding: 8px 16px; background: #2f9e44; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+      .tempItemForm button:hover { background: #2b8a3e; }
+      .tempItemsList { display: flex; flex-direction: column; gap: 8px; }
+      .tempItem { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f7f7f9; border: 1px solid #eee; border-radius: 4px; }
+      .tempItem .info { flex: 1; }
+      .tempItem .name { font-weight: 600; margin-bottom: 4px; }
+      .tempItem .macros { font-size: 13px; color: #666; }
+      .tempItem button { padding: 4px 12px; background: #d33; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+      .tempItem button:hover { background: #a11; }
+      
+      .shoppingLinksBtn { padding: 12px 20px; background: #1e66f5; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; }
+      .shoppingLinksBtn:hover { background: #1557d6; }
+      .shoppingLinksBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+      #btnOpenMissingWalmart:hover { background: #cc6600 !important; }
+      
+      .recentDaysSection { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+      .recentDaysSection h3 { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+      .dayCard { background: #f7f7f9; border: 1px solid #eee; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+      .dayCard:hover { background: #f0f0f0; }
+      .dayCard .dayCardHeader { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+      .dayCard .dayCardExpanded { margin-top: 12px; display: none; }
+      .dayCard.expanded .dayCardExpanded { display: block; }
+      .entryItem { padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 6px; }
+      .entryItem .entryName { font-weight: 600; }
+      .entryItem .entryMacros { font-size: 13px; color: #666; }
+      .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; }
+      .pagination button { padding: 8px 16px; background: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+      .pagination button:hover { background: #f5f5f5; }
+      .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+      
+      /* Walmart Manager Styles */
+      .walmartManagerView { display: none; flex-direction: column; gap: 20px; overflow-y: auto; padding: 8px; }
+      .managerCard { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
+      .managerCard h2 { margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #111; }
+      .counterRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 12px; background: #f7f7f9; border-radius: 6px; }
+      .counterRow span { font-size: 15px; color: #444; }
+      .counterRow strong { font-size: 18px; color: #1e66f5; }
+      .managerBtn { padding: 10px 20px; background: #1e66f5; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; }
+      .managerBtn:hover { background: #1557d6; }
+      .managerBtn:disabled { opacity: 0.6; cursor: not-allowed; background: #999; }
+      .completeManagerBtn { width: 100%; padding: 16px; margin-top: 20px; background: #2f9e44; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px; transition: background 0.2s; }
+      .completeManagerBtn:hover { background: #2b8a3e; }
+      .completeManagerBtn:disabled { opacity: 0.6; cursor: not-allowed; background: #999; }
+      
+      .productOptionsContainer { display: flex; flex-direction: column; gap: 24px; margin-top: 16px; }
+      .productCard { background: #f7f7f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+      .productCard .productName { font-size: 16px; font-weight: 600; color: #111; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .productCard .productName .searchLink { font-size: 14px; font-weight: 400; color: #1e66f5; text-decoration: none; }
+      .productCard .productName .searchLink:hover { text-decoration: underline; }
+      .productCard .notWalmartCheckbox { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666; font-weight: 400; }
+      .productCard .notWalmartCheckbox input[type="checkbox"] { cursor: pointer; }
+      .productCard .notWalmartCheckbox label { cursor: pointer; user-select: none; }
+      .productCard .loadingText { color: #666; font-style: italic; padding: 20px; text-align: center; }
+      .productCard .locationWarning { color: #d33; font-size: 13px; font-weight: 600; padding: 8px 12px; background: #ffe9e9; border: 1px solid #ffcccc; border-radius: 4px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+      .productCard .customLinkBox { margin-top: 12px; }
+      .productCard .customLinkBox label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+      .productCard .customLinkBox input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+      .productCard .customLinkBox input:focus { outline: none; border-color: #1e66f5; }
+      .optionsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+      .optionCard { background: #fff; border: 2px solid #ddd; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 8px; position: relative; }
+      .optionCard:hover { border-color: #1e66f5; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+      .optionCard.selected { border-color: #2f9e44; background: #f0fdf4; }
+      .optionCard .optionImage { width: 100%; height: 150px; object-fit: contain; border-radius: 4px; background: #fff; }
+      .optionCard .optionName { font-size: 13px; font-weight: 500; color: #333; line-height: 1.3; min-height: 36px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
+      .optionCard .optionPrice { font-size: 18px; font-weight: 700; color: #1e66f5; text-decoration: none; display: block; }
+      .optionCard .optionPrice:hover { text-decoration: underline; }
+      .optionCard .radioCircle { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border: 2px solid #ddd; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; }
+      .optionCard.selected .radioCircle { border-color: #2f9e44; background: #2f9e44; }
+      .optionCard.selected .radioCircle::after { content: '✓'; color: #fff; font-size: 14px; font-weight: bold; }
+      
+      .priceUpdateProgress { margin-top: 16px; padding: 16px; background: #f7f7f9; border-radius: 6px; }
+      .progressBar { width: 100%; height: 24px; background: #e0e0e0; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+      .progressBarFill { height: 100%; background: linear-gradient(90deg, #1e66f5, #2f9e44); transition: width 0.3s ease; border-radius: 12px; }
+      .progressText { font-size: 15px; color: #444; margin-bottom: 8px; }
+      .progressText strong { color: #1e66f5; font-size: 18px; }
+      .errorList { margin-top: 12px; max-height: 200px; overflow-y: auto; }
+      .errorItem { padding: 8px 12px; background: #ffe9e9; border: 1px solid #ffcccc; border-radius: 4px; margin-bottom: 6px; font-size: 13px; color: #c00; }
+
+      /* Recipe Browser Styles */
+      .recipesView { display: none; flex-direction: column; gap: 16px; overflow-y: auto; padding: 8px; }
+      .filtersCard { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
+      .filtersCard h3 { margin: 0 0 16px; font-size: 18px; font-weight: 600; }
+      .filterRow { display: grid; grid-template-columns: 200px 1fr; gap: 12px; align-items: center; margin-bottom: 16px; }
+      .filterRow label { font-size: 14px; font-weight: 500; color: #333; }
+      .sliderControl { display: flex; align-items: center; gap: 12px; }
+      .sliderControl input[type="range"] { flex: 1; }
+      .sliderControl .sliderValue { min-width: 60px; text-align: right; font-size: 14px; color: #666; }
+      .recipesGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+      .recipeCard { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; transition: all 0.2s; }
+      .recipeCard:hover { border-color: #1e66f5; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+      .recipeCard .recipeName { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #111; }
+      .recipeCard .recipeDescription { font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.4; }
+      .recipeCard .recipeMacros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+      .recipeCard .macroItem { text-align: center; font-size: 12px; }
+      .recipeCard .macroItem .value { display: block; font-size: 16px; font-weight: 700; color: #1e66f5; }
+      .recipeCard .recipeTime { display: flex; gap: 16px; font-size: 13px; color: #666; border-top: 1px solid #eee; padding-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="headerBar">
+      <h1 id="pageTitle">Grocy IO Wizard</h1>
+      <div class="rightActions">
+        <button id="btnToggleMealPlan" class="actionBtn mealPlanToggle" data-enabled="false" title="When enabled, consuming items will automatically add them to today's meal plan and mark as done">
+          Consume: Add to Meal Plan
+        </button>
+        <button id="btnShowScanner" class="actionBtn">Scanner</button>
+        <button id="btnShowGrocyHome" class="actionBtn">Grocy Home</button>
+        <button id="btnShowWalmart" class="actionBtn">Walmart Manager</button>
+        <button id="btnShowRecipes" class="actionBtn">Recipes</button>
+      </div>
+    </div>
+    <div class="status" id="statusText"></div>
+    <div class="app">
+      <div class="panel queuePanel">
+        <div class="queueHeader">
+          <input id="barcode" type="text" placeholder="Scan or type barcode and press Enter" />
+        </div>
+        <div class="logHeader">
+          <div class="logFilterButtons">
+            <button id="btnLogAll" class="modeBtn small active">All</button>
+            <button id="btnLogNew" class="modeBtn small">Incomplete</button>
+          </div>
+        </div>
+        <div id="queue" class="queueList"></div>
+      </div>
+      <div class="panel keypadPanel">
+        <div class="modeButtons">
+          <button id="btnPurchase" class="modeBtn active">Purchase</button>
+          <button id="btnConsume" class="modeBtn">Consume</button>
+          <button id="btnAddToShopping" class="modeBtn">Add to Shopping</button>
+        </div>
+        <div class="activeBar">
+          <div id="activeName" class="activeName">No item selected</div>
+        </div>
+        <div class="screen">
+          <input id="screen" type="text" inputmode="decimal" pattern="^\\d*\\.?\\d*$" value="1" />
+          <div class="units">servings</div>
+        </div>
+        <div class="keysGrid">
+          <button class="key" data-digit="7">7</button>
+          <button class="key" data-digit="8">8</button>
+          <button class="key" data-digit="9">9</button>
+          <button class="key" data-digit="4">4</button>
+          <button class="key" data-digit="5">5</button>
+          <button class="key" data-digit="6">6</button>
+          <button class="key" data-digit="1">1</button>
+          <button class="key" data-digit="2">2</button>
+          <button class="key" data-digit="3">3</button>
+          <button class="key dot" data-act="dot">.</button>
+          <button class="key" data-digit="0">0</button>
+          <button class="key backspace" data-act="backspace">←</button>
+          <button id="btnUnitToggle" class="key unitToggle" disabled>Servings</button>
+        </div>
+        <button id="btnComplete" class="completeBtn">Complete</button>
+      </div>
+    </div>
+
+    <!-- Grocy Home View -->
+    <div id="grocyHomeView" class="grocyHomeView">
+      <!-- Current Day Status -->
+      <div class="currentDayCard">
+        <div class="dayHeader">
+          <span id="currentDayDate">Today</span>
+          <span id="dayTimeRange" style="font-size: 14px; color: #666;">(6:00 AM - 5:59 AM)</span>
+        </div>
+        <div class="macroGrid">
+          <div class="macroBox">
+            <label>Calories</label>
+            <div><span id="consumedCals">0</span> / <span id="plannedCals">0</span> / <span id="goalCals">0</span></div>
+            <small style="font-size: 11px; color: #888;">consumed / planned / goal</small>
+          </div>
+          <div class="macroBox">
+            <label>Carbs</label>
+            <div><span id="consumedCarbs">0</span> / <span id="plannedCarbs">0</span> / <span id="goalCarbs">0</span>g</div>
+            <small style="font-size: 11px; color: #888;">consumed / planned / goal</small>
+          </div>
+          <div class="macroBox">
+            <label>Fats</label>
+            <div><span id="consumedFats">0</span> / <span id="plannedFats">0</span> / <span id="goalFats">0</span>g</div>
+            <small style="font-size: 11px; color: #888;">consumed / planned / goal</small>
+          </div>
+          <div class="macroBox">
+            <label>Protein</label>
+            <div><span id="consumedProtein">0</span> / <span id="plannedProtein">0</span> / <span id="goalProtein">0</span>g</div>
+            <small style="font-size: 11px; color: #888;">consumed / planned / goal</small>
+          </div>
+        </div>
+        
+        <!-- Status indicators -->
+        <div class="statusRow">
+          <span>Missing Walmart Links: <strong id="missingLinks">-</strong></span>
+          <span>Missing Prices: <strong id="missingPrices">-</strong></span>
+          <span>Placeholder Items: <strong id="placeholderCount">-</strong></span>
+          <span>Below Min Stock: <strong id="belowMinCount">-</strong></span>
+          <span>Shopping Cart Value: <strong id="shoppingCartValue">$-</strong></span>
+        </div>
+        
+        <!-- Shopping List Actions -->
+        <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button id="btnOpenShoppingLinks" class="shoppingLinksBtn">
+            🛒 Open Shopping List Links
+          </button>
+          <button id="btnRefreshProcessedValues" class="shoppingLinksBtn" style="background: #2f9e44;">
+            🔄 Refresh Processed Values
+          </button>
+          <button id="btnImportShoppingList" class="shoppingLinksBtn" style="background: #ff8c00;">
+            📥 Import Shopping List
+          </button>
+        </div>
+      </div>
+      
+      <!-- Temp Items Section -->
+      <div class="tempItemsSection">
+        <h3>Quick Add (Today)</h3>
+        <div class="tempItemForm">
+          <input type="text" id="tempItemName" placeholder="Item name" />
+          <input type="number" id="tempItemCals" placeholder="Calories" step="1" />
+          <input type="number" id="tempItemCarbs" placeholder="Carbs" step="0.1" />
+          <input type="number" id="tempItemFats" placeholder="Fats" step="0.1" />
+          <input type="number" id="tempItemProtein" placeholder="Protein" step="0.1" />
+          <button id="btnAddTempItem">Add</button>
+        </div>
+        <div id="tempItemsList" class="tempItemsList">
+          <!-- Temp items will be populated here -->
+        </div>
+      </div>
+      
+      <!-- Recent Days Section -->
+      <div class="recentDaysSection">
+        <h3>Recent Days</h3>
+        <div id="recentDaysList">
+          <!-- Recent days will be populated here -->
+        </div>
+        <div class="pagination">
+          <button id="btnPrevPage" disabled>← Prev</button>
+          <span id="pageInfo">Page 1</span>
+          <button id="btnNextPage" disabled>Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recipes View -->
+    <div id="recipesView" class="recipesView">
+      <div class="filtersCard">
+        <h3>Recipe Filters</h3>
+
+        <!-- Can be made filter -->
+        <div class="filterRow">
+          <label>
+            <input type="checkbox" id="filterCanBeMade"> Can be made now
+          </label>
+        </div>
+
+        <!-- Carbs Percentile Filter -->
+        <div class="filterRow">
+          <label>Carbs Percentile (Top %)</label>
+          <div class="sliderControl">
+            <input type="range" id="filterCarbsMin" min="0" max="100" value="0" step="10">
+            <span class="sliderValue"><span id="filterCarbsMinValue">0</span>%</span>
+          </div>
+        </div>
+
+        <!-- Protein Percentile Filter -->
+        <div class="filterRow">
+          <label>Protein Percentile (Top %)</label>
+          <div class="sliderControl">
+            <input type="range" id="filterProteinMin" min="0" max="100" value="0" step="10">
+            <span class="sliderValue"><span id="filterProteinMinValue">0</span>%</span>
+          </div>
+        </div>
+
+        <!-- Max Active cook time -->
+        <div class="filterRow">
+          <label>Max Active cook time</label>
+          <div class="sliderControl">
+            <input type="range" id="filterActiveTimeMax" min="0" max="45" value="45" step="5">
+            <span class="sliderValue"><span id="filterActiveTimeMaxValue">45</span> min</span>
+          </div>
+        </div>
+
+        <!-- Max Total cook time -->
+        <div class="filterRow">
+          <label>Max Total cook time</label>
+          <div class="sliderControl">
+            <input type="range" id="filterTotalTimeMax" min="0" max="45" value="45" step="5">
+            <span class="sliderValue"><span id="filterTotalTimeMaxValue">45</span> min</span>
+          </div>
+        </div>
+
+        <button class="managerBtn" onclick="searchRecipes()">Search Recipes</button>
+      </div>
+
+      <div class="managerCard">
+        <h2>Results <span id="recipeCount"></span></h2>
+        <div id="recipesGrid" class="recipesGrid"></div>
+      </div>
+    </div>
+
+    <!-- Walmart Manager View -->
+    <div id="walmartManagerView" class="walmartManagerView">
+      <!-- Missing Links Section -->
+      <div class="managerCard">
+        <h2>Update Missing Walmart Links</h2>
+        <div class="counterRow">
+          <span>Missing Links: <strong id="missingLinksCount">-</strong></span>
+          <button id="btnFetchMissingLinks" class="managerBtn">Load Next 5 Products</button>
+        </div>
+        <div id="productOptionsContainer" class="productOptionsContainer"></div>
+        <button id="btnCompleteLinkUpdates" class="completeManagerBtn" style="display:none;">Complete & Update Selected</button>
+      </div>
+      
+      <!-- Missing Prices Section -->
+      <div class="managerCard">
+        <h2>Update Missing Prices</h2>
+        <div class="counterRow">
+          <span>Missing Prices (with links): <strong id="missingPricesCount">-</strong></span>
+          <button id="btnStartPriceUpdate" class="managerBtn">Start Price Update</button>
+        </div>
+        <div id="priceUpdateProgress" class="priceUpdateProgress" style="display:none;">
+          <div class="progressBar">
+            <div id="priceProgressBar" class="progressBarFill"></div>
+          </div>
+          <div class="progressText">Progress: <strong id="priceProgressText">0 / 0</strong></div>
+          <div id="priceErrorList" class="errorList"></div>
+        </div>
+        
+        <!-- Manual Price Entry for Non-Walmart Items -->
+        <div id="manualPriceSection" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+          <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 600;">Manual Price Entry (Non-Walmart Items)</h3>
+          <div id="manualPriceList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+          <button id="btnCompleteManualPrices" class="completeManagerBtn" style="display:none; margin-top: 12px;">Complete Manual Prices</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="logs"></div>
+    <div id="modlogs"></div>
+
+    <script>
+      const statusText = document.getElementById('statusText');
+      const barcodeInput = document.getElementById('barcode');
+      const queueEl = document.getElementById('queue');
+      const screen = document.getElementById('screen');
+      const logsEl = document.getElementById('logs');
+      const modlogsEl = document.getElementById('modlogs');
+      const btnPurchase = document.getElementById('btnPurchase');
+      const btnConsume = document.getElementById('btnConsume');
+      const btnComplete = document.getElementById('btnComplete');
+      const btnAddToShopping = document.getElementById('btnAddToShopping');
+      const btnLogAll = document.getElementById('btnLogAll');
+      const btnLogNew = document.getElementById('btnLogNew');
+      const btnToggleMealPlan = document.getElementById('btnToggleMealPlan');
+      const btnUnitToggle = document.getElementById('btnUnitToggle');
+      const screenUnits = document.querySelector('.screen .units');
+      
+      // Meal plan toggle state
+      let mealPlanEnabled = false;
+      
+      // Unit toggle state (servings or containers)
+      let unitMode = 'servings';
+      
+      // Recipe densities for percentile filtering
+      let recipeProteinDensities = [];
+      let recipeCarbsDensities = [];
+
+      // Grocy Home Elements
+      const pageTitle = document.getElementById('pageTitle');
+      const btnShowScanner = document.getElementById('btnShowScanner');
+      const btnShowGrocyHome = document.getElementById('btnShowGrocyHome');
+      const btnShowWalmart = document.getElementById('btnShowWalmart');
+      const btnShowRecipes = document.getElementById('btnShowRecipes');
+      const appView = document.querySelector('.app');
+      const grocyHomeView = document.getElementById('grocyHomeView');
+      const walmartManagerView = document.getElementById('walmartManagerView');
+      const recipesView = document.getElementById('recipesView');
+      const btnAddTempItem = document.getElementById('btnAddTempItem');
+      const tempItemsList = document.getElementById('tempItemsList');
+      let currentView = 'scanner'; // 'scanner', 'home', 'walmart', or 'recipes'
+      let refreshInterval = null; // For auto-refresh
+
+      // Update button states and meal plan button visibility
+      function updatePageButtons() {
+        // Reset all buttons
+        btnShowScanner.classList.remove('active');
+        btnShowGrocyHome.classList.remove('active');
+        btnShowWalmart.classList.remove('active');
+        btnShowRecipes.classList.remove('active');
+
+        // Set active button
+        if (currentView === 'scanner') {
+          btnShowScanner.classList.add('active');
+          btnShowScanner.style.background = '#222';
+          btnShowScanner.style.color = '#fff';
+          btnShowGrocyHome.style.background = '';
+          btnShowGrocyHome.style.color = '';
+          btnShowWalmart.style.background = '';
+          btnShowWalmart.style.color = '';
+          btnShowRecipes.style.background = '';
+          btnShowRecipes.style.color = '';
+          btnToggleMealPlan.style.display = ''; // Show on scanner page
+        } else if (currentView === 'home') {
+          btnShowGrocyHome.classList.add('active');
+          btnShowGrocyHome.style.background = '#222';
+          btnShowGrocyHome.style.color = '#fff';
+          btnShowScanner.style.background = '';
+          btnShowScanner.style.color = '';
+          btnShowWalmart.style.background = '';
+          btnShowWalmart.style.color = '';
+          btnShowRecipes.style.background = '';
+          btnShowRecipes.style.color = '';
+          btnToggleMealPlan.style.display = 'none'; // Hide on non-scanner pages
+        } else if (currentView === 'walmart') {
+          btnShowWalmart.classList.add('active');
+          btnShowWalmart.style.background = '#222';
+          btnShowWalmart.style.color = '#fff';
+          btnShowScanner.style.background = '';
+          btnShowScanner.style.color = '';
+          btnShowGrocyHome.style.background = '';
+          btnShowGrocyHome.style.color = '';
+          btnShowRecipes.style.background = '';
+          btnShowRecipes.style.color = '';
+          btnToggleMealPlan.style.display = 'none'; // Hide on non-scanner pages
+        } else if (currentView === 'recipes') {
+          btnShowRecipes.classList.add('active');
+          btnShowRecipes.style.background = '#222';
+          btnShowRecipes.style.color = '#fff';
+          btnShowScanner.style.background = '';
+          btnShowScanner.style.color = '';
+          btnShowGrocyHome.style.background = '';
+          btnShowGrocyHome.style.color = '';
+          btnShowWalmart.style.background = '';
+          btnShowWalmart.style.color = '';
+          btnToggleMealPlan.style.display = 'none'; // Hide on non-scanner pages
+        }
+      }
+
+      // Page switching functions
+      function showScanner() {
+        // Stop any existing refresh intervals
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
+
+        appView.style.display = 'grid';
+        grocyHomeView.style.display = 'none';
+        walmartManagerView.style.display = 'none';
+        recipesView.style.display = 'none';
+        pageTitle.textContent = 'Grocy IO Wizard';
+        currentView = 'scanner';
+        updatePageButtons();
+      }
+      
+      function showGrocyHome() {
+        // Stop any existing refresh intervals
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
+        
+        appView.style.display = 'none';
+        grocyHomeView.style.display = 'flex';
+        walmartManagerView.style.display = 'none';
+        recipesView.style.display = 'none';
+        pageTitle.textContent = 'Grocy Home';
+        currentView = 'home';
+        updatePageButtons();
+        
+        // Initial load includes day history
+        loadGrocyHome(true);
+        
+        // Start auto-refresh every 30 seconds (but only for current day, not history)
+        refreshInterval = setInterval(() => {
+          loadGrocyHome(false); // Don't reload history on auto-refresh
+        }, 30000);
+      }
+      
+      function showWalmartManager() {
+        // Stop any existing refresh intervals
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
+
+        appView.style.display = 'none';
+        grocyHomeView.style.display = 'none';
+        walmartManagerView.style.display = 'flex';
+        recipesView.style.display = 'none';
+        pageTitle.textContent = 'Walmart Manager';
+        currentView = 'walmart';
+        updatePageButtons();
+
+        // Load Walmart Manager data
+        loadWalmartManager();
+      }
+
+      function showRecipesView() {
+        // Stop any existing refresh intervals
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
+        }
+
+        appView.style.display = 'none';
+        grocyHomeView.style.display = 'none';
+        walmartManagerView.style.display = 'none';
+        recipesView.style.display = 'flex';
+        pageTitle.textContent = 'Recipe Browser';
+        currentView = 'recipes';
+        updatePageButtons();
+        
+        // Load recipe densities for percentile filtering (protein & carbs)
+        loadRecipeDensities();
+      }
+      
+      function loadRecipeDensities() {
+        // Load all recipe protein densities for percentile calculation
+        fetch('/api/recipes/protein-densities')
+          .then(res => res.json())
+          .then(data => {
+            recipeProteinDensities = data.recipes || [];
+            console.log(`Loaded ${recipeProteinDensities.length} recipes for protein percentile filtering`);
+          })
+          .catch(err => {
+            console.error('Error loading protein densities:', err);
+            recipeProteinDensities = [];
+          });
+        
+        // Load all recipe carbs densities for percentile calculation
+        fetch('/api/recipes/carbs-densities')
+          .then(res => res.json())
+          .then(data => {
+            recipeCarbsDensities = data.recipes || [];
+            console.log(`Loaded ${recipeCarbsDensities.length} recipes for carbs percentile filtering`);
+          })
+          .catch(err => {
+            console.error('Error loading carbs densities:', err);
+            recipeCarbsDensities = [];
+          });
+      }
+      
+      // Wire up page buttons
+      btnShowScanner.addEventListener('click', showScanner);
+      btnShowGrocyHome.addEventListener('click', showGrocyHome);
+      btnShowWalmart.addEventListener('click', showWalmartManager);
+      btnShowRecipes.addEventListener('click', showRecipesView);
+      
+      // Initialize button states
+      updatePageButtons();
+      
+      // Meal Plan Toggle Handler
+      btnToggleMealPlan.addEventListener('click', () => {
+        mealPlanEnabled = !mealPlanEnabled;
+        btnToggleMealPlan.setAttribute('data-enabled', mealPlanEnabled.toString());
+        btnToggleMealPlan.title = mealPlanEnabled 
+          ? 'ENABLED: Consuming items will automatically add them to today\'s meal plan and mark as done. Click to disable.'
+          : 'DISABLED: Consuming items will NOT add to meal plan. Click to enable.';
+        
+        // Update unit mode if in consume mode
+        if (scanOp === 'remove') {
+          unitMode = mealPlanEnabled ? 'servings' : 'containers';
+          updateScreenUnits();
+        }
+      });
+
+      // Grocy Home Functions
+      async function fetchDaySummary(day = null) {
+        const url = day ? `/api/macros/day-summary?day=${day}` : '/api/macros/day-summary';
+        const res = await fetch(url);
+        return await res.json();
+      }
+
+      async function fetchStatusCounts() {
+        const res = await fetch('/api/status/counts');
+        return await res.json();
+      }
+
+      async function createTempItem(itemData) {
+        const res = await fetch('/api/temp-items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(itemData)
+        });
+        return await res.json();
+      }
+
+      async function deleteTempItem(id) {
+        const res = await fetch(`/api/temp-items/${id}`, { method: 'DELETE' });
+        return await res.json();
+      }
+
+      async function loadGrocyHome(includeHistory = false) {
+        try {
+          // Load day summary
+          const daySummary = await fetchDaySummary();
+          updateDaySummary(daySummary);
+
+          // Load status counts
+          const counts = await fetchStatusCounts();
+          updateStatusCounts(counts);
+
+          // Load temp items for today
+          loadTempItems(daySummary);
+          
+          // Load recent days only on initial load (not on auto-refresh)
+          if (includeHistory) {
+            loadRecentDays(currentRecentDaysPage);
+          }
+        } catch (err) {
+          console.error('Error loading Grocy Home:', err);
+        }
+      }
+
+      function updateDaySummary(data) {
+        document.getElementById('currentDayDate').textContent = data.day || 'Today';
+        
+        const consumedCals = data.consumed?.calories || 0;
+        const plannedCals = data.planned?.calories || 0;
+        const goalCals = data.goal?.calories || 0;
+        const consumedCarbs = data.consumed?.carbs || 0;
+        const plannedCarbs = data.planned?.carbs || 0;
+        const goalCarbs = data.goal?.carbs || 0;
+        const consumedFats = data.consumed?.fats || 0;
+        const plannedFats = data.planned?.fats || 0;
+        const goalFats = data.goal?.fats || 0;
+        const consumedProtein = data.consumed?.protein || 0;
+        const plannedProtein = data.planned?.protein || 0;
+        const goalProtein = data.goal?.protein || 0;
+        
+        // Update consumed/planned/goal format
+        document.getElementById('consumedCals').textContent = consumedCals;
+        document.getElementById('plannedCals').textContent = plannedCals;
+        document.getElementById('goalCals').textContent = goalCals;
+        
+        document.getElementById('consumedCarbs').textContent = consumedCarbs.toFixed(1);
+        document.getElementById('plannedCarbs').textContent = plannedCarbs.toFixed(1);
+        document.getElementById('goalCarbs').textContent = goalCarbs.toFixed(1);
+        
+        document.getElementById('consumedFats').textContent = consumedFats.toFixed(1);
+        document.getElementById('plannedFats').textContent = plannedFats.toFixed(1);
+        document.getElementById('goalFats').textContent = goalFats.toFixed(1);
+        
+        document.getElementById('consumedProtein').textContent = consumedProtein.toFixed(1);
+        document.getElementById('plannedProtein').textContent = plannedProtein.toFixed(1);
+        document.getElementById('goalProtein').textContent = goalProtein.toFixed(1);
+      }
+
+      function updateStatusCounts(counts) {
+        document.getElementById('missingLinks').textContent = counts.missing_walmart_links || 0;
+        document.getElementById('missingPrices').textContent = counts.missing_prices || 0;
+        document.getElementById('placeholderCount').textContent = counts.placeholder_count || 0;
+        document.getElementById('belowMinCount').textContent = counts.below_min_count || 0;
+        document.getElementById('shoppingCartValue').textContent = '$' + (counts.shopping_cart_value || '0.00');
+      }
+
+      function loadTempItems(daySummary) {
+        const tempItems = daySummary.consumed?.entries?.filter(e => e.type === 'temp') || [];
+        tempItemsList.innerHTML = '';
+        
+        tempItems.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'tempItem';
+          div.innerHTML = `
+            <div class="info">
+              <div class="name">${item.name}</div>
+              <div class="macros">${item.calories}cal • ${item.carbs}g C • ${item.fats}g F • ${item.protein}g P</div>
+            </div>
+            <button onclick="handleDeleteTempItem(${item.id})">Delete</button>
+          `;
+          tempItemsList.appendChild(div);
+        });
+      }
+
+      btnAddTempItem.addEventListener('click', async () => {
+        const name = document.getElementById('tempItemName').value.trim();
+        const calories = parseFloat(document.getElementById('tempItemCals').value) || 0;
+        const carbs = parseFloat(document.getElementById('tempItemCarbs').value) || 0;
+        const fats = parseFloat(document.getElementById('tempItemFats').value) || 0;
+        const protein = parseFloat(document.getElementById('tempItemProtein').value) || 0;
+
+        if (!name || calories === 0) {
+          alert('Please enter item name and calories');
+          return;
+        }
+
+        try {
+          await createTempItem({ name, calories, carbs, fats, protein });
+          
+          // Clear form
+          document.getElementById('tempItemName').value = '';
+          document.getElementById('tempItemCals').value = '';
+          document.getElementById('tempItemCarbs').value = '';
+          document.getElementById('tempItemFats').value = '';
+          document.getElementById('tempItemProtein').value = '';
+
+          // Reload Grocy Home
+          loadGrocyHome();
+        } catch (err) {
+          console.error('Error creating temp item:', err);
+          alert('Failed to create temp item');
+        }
+      });
+
+      async function handleDeleteTempItem(id) {
+        if (!confirm('Delete this temp item?')) return;
+        
+        try {
+          await deleteTempItem(id);
+          loadGrocyHome();
+        } catch (err) {
+          console.error('Error deleting temp item:', err);
+          alert('Failed to delete temp item');
+        }
+      }
+
+      // Open shopping list links
+      const btnOpenShoppingLinks = document.getElementById('btnOpenShoppingLinks');
+      if (btnOpenShoppingLinks) {
+        btnOpenShoppingLinks.addEventListener('click', async () => {
+          try {
+            btnOpenShoppingLinks.disabled = true;
+            btnOpenShoppingLinks.textContent = '⏳ Loading...';
+            
+            const res = await fetch('/api/shopping/cart-links?shopping_list_id=1');
+            const data = await res.json();
+            
+            if (!res.ok || data.error) {
+              throw new Error(data.error || 'Failed to fetch shopping links');
+            }
+            
+            if (!data.items || data.items.length === 0) {
+              alert('No items in shopping list');
+              return;
+            }
+            
+            // Separate cart links and items missing walmart links
+            const cartLinks = data.items.filter(item => item.link.includes('addToCart'));
+            const missingLinks = data.items.filter(item => item.link.includes('search'));
+            
+            // If there are items missing links, show a popup and don't open any links
+            if (missingLinks.length > 0) {
+              const itemsList = missingLinks.map(item => `• ${item.name}`).join('\n');
+              alert(
+                `⚠️ Shopping list contains ${missingLinks.length} item(s) missing Walmart links:\n\n` +
+                itemsList +
+                `\n\nPlease use the Missing Links Wizard in the Walmart Manager section to add links for these items.`
+              );
+              btnOpenShoppingLinks.textContent = '🛒 Open Shopping List Links';
+              return;
+            }
+            
+            // Only open cart links if all items have walmart links
+            for (let i = 0; i < cartLinks.length; i++) {
+              const item = cartLinks[i];
+              window.open(item.link, '_blank');
+              
+              // Small delay between opens (except for last item)
+              if (i < cartLinks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+            }
+            
+            const msg = `✅ Opened ${cartLinks.length} cart link(s)`;
+            btnOpenShoppingLinks.textContent = msg;
+            setTimeout(() => {
+              btnOpenShoppingLinks.textContent = '🛒 Open Shopping List Links';
+            }, 2000);
+          } catch (err) {
+            console.error('Error opening shopping links:', err);
+            alert('Failed to open shopping links: ' + err.message);
+            btnOpenShoppingLinks.textContent = '🛒 Open Shopping List Links';
+          } finally {
+            btnOpenShoppingLinks.disabled = false;
+          }
+        });
+        
+        // Refresh Processed Values button
+        const btnRefreshProcessedValues = document.getElementById('btnRefreshProcessedValues');
+        btnRefreshProcessedValues.addEventListener('click', async () => {
+          try {
+            btnRefreshProcessedValues.disabled = true;
+            btnRefreshProcessedValues.textContent = '⏳ Refreshing...';
+
+            const res = await fetch('/api/refresh-processed-values', { method: 'POST' });
+            const data = await res.json();
+
+            if (!res.ok) {
+              throw new Error(data.error || 'Failed to refresh processed values');
+            }
+
+            // Show results
+            const recipeStatus = data.results.update_recipe_macros.status;
+            const shoppingStatus = data.results.add_below_min_to_shopping.status;
+
+            if (data.status === 'success') {
+              btnRefreshProcessedValues.textContent = '✅ Refreshed!';
+              console.log('Successfully refreshed: Recipe macros updated, Items below min stock added to shopping list');
+            } else {
+              let message = 'Partial success: ';
+              if (recipeStatus === 'error') {
+                message += 'Recipe macros error: ' + data.results.update_recipe_macros.error + '; ';
+              } else {
+                message += 'Recipe macros updated; ';
+              }
+              if (shoppingStatus === 'error') {
+                message += 'Shopping list error: ' + data.results.add_below_min_to_shopping.error;
+              } else {
+                message += 'Shopping list updated';
+              }
+              console.warn(message);
+              btnRefreshProcessedValues.textContent = '⚠️ Partial';
+            }
+
+            // Refresh the page data to show updated values
+            setTimeout(() => {
+              loadGrocyHome();
+              btnRefreshProcessedValues.textContent = '🔄 Refresh Processed Values';
+            }, 3000);
+          } catch (err) {
+            console.error('Error refreshing processed values:', err);
+            btnRefreshProcessedValues.textContent = '❌ Error';
+            setTimeout(() => {
+              btnRefreshProcessedValues.textContent = '🔄 Refresh Processed Values';
+            }, 3000);
+          } finally {
+            btnRefreshProcessedValues.disabled = false;
+          }
+        });
+        
+        // Import Shopping List button
+        const btnImportShoppingList = document.getElementById('btnImportShoppingList');
+        btnImportShoppingList.addEventListener('click', async () => {
+          try {
+            // Confirm before importing
+            if (!confirm('Import all non-placeholder items from the shopping list to inventory?\n\nThis will add 1 container per shopping list entry.')) {
+              return;
+            }
+            
+            btnImportShoppingList.disabled = true;
+            btnImportShoppingList.textContent = '⏳ Importing...';
+
+            const res = await fetch('/api/import-shopping-list', { 
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ shopping_list_id: 1 })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+              throw new Error(data.message || 'Failed to import shopping list');
+            }
+
+            // Show success message
+            const msg = `✅ Imported ${data.purchased_count}, Removed ${data.removed_count || 0}`;
+            btnImportShoppingList.textContent = msg;
+            console.log(`Successfully imported: ${data.message}`);
+            
+            if (data.errors && data.errors.length > 0) {
+              console.warn('Some items had errors:', data.errors);
+            }
+
+            // Refresh the page data to show updated values
+            setTimeout(() => {
+              loadGrocyHome();
+              btnImportShoppingList.textContent = '📥 Import Shopping List';
+              btnImportShoppingList.disabled = false;
+            }, 3000);
+          } catch (err) {
+            console.error('Error importing shopping list:', err);
+            btnImportShoppingList.textContent = '❌ Error';
+            setTimeout(() => {
+              btnImportShoppingList.textContent = '📥 Import Shopping List';
+              btnImportShoppingList.disabled = false;
+            }, 3000);
+          }
+        });
+      }
+
+      // Open missing Walmart links/prices (next 5)
+      const btnOpenMissingWalmart = document.getElementById('btnOpenMissingWalmart');
+      let missingWalmartOffset = 0; // Track pagination offset
+      
+      if (btnOpenMissingWalmart) {
+        btnOpenMissingWalmart.addEventListener('click', async () => {
+          try {
+            btnOpenMissingWalmart.disabled = true;
+            btnOpenMissingWalmart.textContent = '⏳ Loading...';
+            
+            const res = await fetch(`/api/missing-walmart?limit=5&offset=${missingWalmartOffset}`);
+            const data = await res.json();
+            
+            if (!res.ok || data.error) {
+              throw new Error(data.error || 'Failed to fetch missing walmart items');
+            }
+            
+            if (!data.items || data.items.length === 0) {
+              alert('No more items with missing links or prices!');
+              missingWalmartOffset = 0; // Reset offset
+              btnOpenMissingWalmart.textContent = '🔍 Open Next 5 Missing Links/Prices';
+              btnOpenMissingWalmart.disabled = false;
+              return;
+            }
+            
+            // Open each search URL in a new tab with a small delay
+            for (let i = 0; i < data.items.length; i++) {
+              const item = data.items[i];
+              window.open(item.url, '_blank');
+              
+              // Small delay between opens (except for last item)
+              if (i < data.items.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 150));
+              }
+            }
+            
+            // Update offset for next batch
+            missingWalmartOffset += data.items.length;
+            
+            // Show success message with details
+            const linkCount = data.items.filter(item => item.missing_link).length;
+            const priceCount = data.items.filter(item => item.missing_price).length;
+            let msg = `✅ Opened ${data.items.length} links`;
+            if (linkCount > 0 && priceCount > 0) {
+              msg += ` (${linkCount} missing links, ${priceCount} missing prices)`;
+            } else if (linkCount > 0) {
+              msg += ` (missing links)`;
+            } else if (priceCount > 0) {
+              msg += ` (missing prices)`;
+            }
+            
+            if (data.has_more) {
+              msg += ` • ${data.total - missingWalmartOffset} more remaining`;
+            } else {
+              msg += ' • No more remaining';
+              missingWalmartOffset = 0; // Reset for next time
+            }
+            
+            btnOpenMissingWalmart.textContent = msg;
+            setTimeout(() => {
+              btnOpenMissingWalmart.textContent = data.has_more 
+                ? '🔍 Open Next 5 Missing Links/Prices'
+                : '🔍 Open Next 5 Missing Links/Prices (Start Over)';
+            }, 3000);
+          } catch (err) {
+            console.error('Error opening missing walmart links:', err);
+            alert('Failed to open missing walmart links: ' + err.message);
+            btnOpenMissingWalmart.textContent = '🔍 Open Next 5 Missing Links/Prices';
+          } finally {
+            btnOpenMissingWalmart.disabled = false;
+          }
+        });
+      }
+
+      // Recent Days functionality
+      let currentRecentDaysPage = 0;
+      const recentDaysListEl = document.getElementById('recentDaysList');
+      const btnPrevPage = document.getElementById('btnPrevPage');
+      const btnNextPage = document.getElementById('btnNextPage');
+      const pageInfo = document.getElementById('pageInfo');
+
+      async function fetchRecentDays(page) {
+        const res = await fetch(`/api/macros/recent-days?page=${page}&limit=4`);
+        return await res.json();
+      }
+
+      async function loadRecentDays(page) {
+        try {
+          const data = await fetchRecentDays(page);
+          currentRecentDaysPage = data.current_page || 0;
+          
+          // Clear existing days
+          recentDaysListEl.innerHTML = '';
+          
+          // Render each day as an expandable card
+          if (data.days && data.days.length > 0) {
+            data.days.forEach((dayData) => {
+              const dayCard = createDayCard(dayData);
+              recentDaysListEl.appendChild(dayCard);
+            });
+          } else {
+            recentDaysListEl.innerHTML = '<p style="color: #666; padding: 12px;">No recent days with activity</p>';
+          }
+          
+          // Update pagination controls
+          pageInfo.textContent = `Page ${currentRecentDaysPage + 1}`;
+          btnPrevPage.disabled = currentRecentDaysPage <= 0;
+          btnNextPage.disabled = currentRecentDaysPage >= (data.total_pages - 1);
+        } catch (err) {
+          console.error('Error loading recent days:', err);
+          recentDaysListEl.innerHTML = '<p style="color: red; padding: 12px;">Failed to load recent days</p>';
+        }
+      }
+
+      function createDayCard(dayData) {
+        const card = document.createElement('div');
+        card.className = 'dayCard';
+        
+        const consumed = dayData.consumed || {};
+        const planned = dayData.planned || {};
+        const entries = consumed.entries || [];
+        
+        // Card header with summary
+        const header = document.createElement('div');
+        header.className = 'dayCardHeader';
+        header.innerHTML = `
+          <span>${dayData.day}</span>
+          <span>${consumed.calories || 0} / ${planned.calories || 0} cal</span>
+        `;
+        
+        // Expanded content (hidden by default)
+        const expanded = document.createElement('div');
+        expanded.className = 'dayCardExpanded';
+        
+        // Macro summary
+        const macroSummary = document.createElement('div');
+        macroSummary.style.marginBottom = '12px';
+        macroSummary.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+            <div><strong>Carbs:</strong> ${(consumed.carbs || 0).toFixed(1)}g / ${(planned.carbs || 0).toFixed(1)}g</div>
+            <div><strong>Fats:</strong> ${(consumed.fats || 0).toFixed(1)}g / ${(planned.fats || 0).toFixed(1)}g</div>
+            <div><strong>Protein:</strong> ${(consumed.protein || 0).toFixed(1)}g / ${(planned.protein || 0).toFixed(1)}g</div>
+          </div>
+        `;
+        expanded.appendChild(macroSummary);
+        
+        // Entries list
+        if (entries.length > 0) {
+          const entriesTitle = document.createElement('div');
+          entriesTitle.style.fontWeight = '600';
+          entriesTitle.style.marginBottom = '8px';
+          entriesTitle.textContent = 'Consumed Items:';
+          expanded.appendChild(entriesTitle);
+          
+          entries.forEach((entry) => {
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'entryItem';
+            entryDiv.innerHTML = `
+              <div class="entryName">${entry.name}</div>
+              <div class="entryMacros">${entry.calories || 0}cal • ${(entry.carbs || 0).toFixed(1)}g C • ${(entry.fats || 0).toFixed(1)}g F • ${(entry.protein || 0).toFixed(1)}g P</div>
+            `;
+            expanded.appendChild(entryDiv);
+          });
+        } else {
+          const noEntries = document.createElement('p');
+          noEntries.style.color = '#666';
+          noEntries.style.fontSize = '13px';
+          noEntries.textContent = 'No consumed items for this day';
+          expanded.appendChild(noEntries);
+        }
+        
+        card.appendChild(header);
+        card.appendChild(expanded);
+        
+        // Toggle expand on click
+        header.addEventListener('click', () => {
+          card.classList.toggle('expanded');
+        });
+        
+        return card;
+      }
+
+      // Pagination button handlers
+      btnPrevPage.addEventListener('click', () => {
+        if (currentRecentDaysPage > 0) {
+          loadRecentDays(currentRecentDaysPage - 1);
+        }
+      });
+
+      btnNextPage.addEventListener('click', () => {
+        loadRecentDays(currentRecentDaysPage + 1);
+      });
+
+      // =====================
+      // Walmart Manager Functions
+      // =====================
+      
+      const btnFetchMissingLinks = document.getElementById('btnFetchMissingLinks');
+      const btnCompleteLinkUpdates = document.getElementById('btnCompleteLinkUpdates');
+      const btnStartPriceUpdate = document.getElementById('btnStartPriceUpdate');
+      const productOptionsContainer = document.getElementById('productOptionsContainer');
+      const missingLinksCount = document.getElementById('missingLinksCount');
+      const missingPricesCount = document.getElementById('missingPricesCount');
+      const priceUpdateProgress = document.getElementById('priceUpdateProgress');
+      const priceProgressBar = document.getElementById('priceProgressBar');
+      const priceProgressText = document.getElementById('priceProgressText');
+      const priceErrorList = document.getElementById('priceErrorList');
+      const manualPriceSection = document.getElementById('manualPriceSection');
+      const manualPriceList = document.getElementById('manualPriceList');
+      const btnCompleteManualPrices = document.getElementById('btnCompleteManualPrices');
+      
+      let loadedProducts = [];
+      let selectedOptions = {}; // { product_id: { url, price } }
+      let currentPriceJobId = null;
+      let isOperationRunning = false; // Track if any operation is running
+      let nonWalmartItems = []; // Items that need manual price entry
+      
+      async function loadWalmartManager() {
+        try {
+          await loadMissingLinksCount();
+          await loadMissingPricesCount();
+        } catch (err) {
+          console.error('Error loading Walmart Manager:', err);
+        }
+      }
+      
+      function updateOperationButtons() {
+        // Disable both buttons when any operation is running
+        btnFetchMissingLinks.disabled = isOperationRunning;
+        btnStartPriceUpdate.disabled = isOperationRunning || currentPriceJobId !== null;
+        
+        // Gray out buttons when disabled
+        if (isOperationRunning) {
+          btnFetchMissingLinks.style.opacity = '0.5';
+          btnFetchMissingLinks.style.cursor = 'not-allowed';
+          btnStartPriceUpdate.style.opacity = '0.5';
+          btnStartPriceUpdate.style.cursor = 'not-allowed';
+        } else {
+          btnFetchMissingLinks.style.opacity = '';
+          btnFetchMissingLinks.style.cursor = '';
+          if (currentPriceJobId === null) {
+            btnStartPriceUpdate.style.opacity = '';
+            btnStartPriceUpdate.style.cursor = '';
+          }
+        }
+      }
+      
+      async function loadMissingLinksCount() {
+        try {
+          const res = await fetch('/api/walmart/missing-links-batch?limit=999');
+          const data = await res.json();
+          missingLinksCount.textContent = data.total || 0;
+        } catch (err) {
+          console.error('Error loading missing links count:', err);
+          missingLinksCount.textContent = 'Error';
+        }
+      }
+      
+      async function loadMissingPricesCount() {
+        try {
+          const res = await fetch('/api/status/counts');
+          const data = await res.json();
+          // Count only items with link but missing price
+          const counts = await fetch('/api/walmart/missing-links-batch?limit=999');
+          const linksData = await counts.json();
+          const totalMissingLinks = linksData.total || 0;
+          const totalMissingPrices = data.missing_prices || 0;
+          // Missing prices with links = total missing prices - total missing links
+          const missingPricesWithLinks = Math.max(0, totalMissingPrices - totalMissingLinks);
+          missingPricesCount.textContent = missingPricesWithLinks;
+        } catch (err) {
+          console.error('Error loading missing prices count:', err);
+          missingPricesCount.textContent = 'Error';
+        }
+      }
+      
+      async function fetchAndDisplayMissingLinks() {
+        try {
+          isOperationRunning = true;
+          updateOperationButtons();
+          btnFetchMissingLinks.textContent = 'Loading...';
+          productOptionsContainer.innerHTML = '';
+          selectedOptions = {};
+          
+          // Fetch first 5 products with missing links
+          const res = await fetch('/api/walmart/missing-links-batch?limit=5');
+          const data = await res.json();
+          
+          if (!data.products || data.products.length === 0) {
+            productOptionsContainer.innerHTML = '<div style="padding:20px;text-align:center;color:#666;">No products with missing links found!</div>';
+            btnFetchMissingLinks.textContent = 'Load Next 5 Products';
+            isOperationRunning = false;
+            updateOperationButtons();
+            return;
+          }
+          
+          loadedProducts = data.products;
+          
+          // Create placeholder cards for each product
+          loadedProducts.forEach(product => {
+            const productCard = document.createElement('div');
+            productCard.className = 'productCard';
+            const searchUrl = `https://www.walmart.com/search?q=${encodeURIComponent(product.name)}`;
+            productCard.innerHTML = `
+              <div class="productName">
+                <span style="flex: 1;">${product.name}</span>
+                <a href="${searchUrl}" target="_blank" class="searchLink">🔍 Search</a>
+                <div class="notWalmartCheckbox">
+                  <input type="checkbox" id="notWalmart_${product.id}" class="notWalmartCheck" data-product-id="${product.id}">
+                  <label for="notWalmart_${product.id}">Not a Walmart Item</label>
+                </div>
+              </div>
+              <div class="loadingText">Loading options...</div>
+              <div class="customLinkBox">
+                <label>Or paste a custom Walmart link:</label>
+                <input type="text" class="customLinkInput" placeholder="https://www.walmart.com/ip/..." data-product-id="${product.id}">
+              </div>
+            `;
+            productCard.setAttribute('data-product-id', product.id);
+            productOptionsContainer.appendChild(productCard);
+            
+            // Add event listener to custom link input to show/hide complete button
+            const customInput = productCard.querySelector('.customLinkInput');
+            customInput.addEventListener('input', updateCompleteButton);
+            
+            // Add event listener to checkbox to update complete button
+            const notWalmartCheck = productCard.querySelector('.notWalmartCheck');
+            notWalmartCheck.addEventListener('change', updateCompleteButton);
+          });
+          
+          // Scrape search results for all products
+          btnFetchMissingLinks.textContent = 'Scraping...';
+          const scrapeRes = await fetch('/api/walmart/scrape-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ products: loadedProducts })
+          });
+          const scrapeData = await scrapeRes.json();
+          
+          // Display results for each product
+          loadedProducts.forEach(product => {
+            const productCard = productOptionsContainer.querySelector(`[data-product-id="${product.id}"]`);
+            if (!productCard) return;
+            
+            const options = scrapeData.results[product.id] || [];
+            const metadata = scrapeData.metadata ? scrapeData.metadata[product.id] : null;
+            
+            // Check if location is wrong (compare requested vs actual store_id)
+            const requestedStoreId = metadata?.search_parameters?.store_id;
+            const actualStoreId = metadata?.search_information?.location?.store_id;
+            const hasLocationWarning = requestedStoreId && actualStoreId && requestedStoreId !== actualStoreId;
+            
+            if (options.length === 0) {
+              productCard.querySelector('.loadingText').textContent = 'No options found';
+              return;
+            }
+            
+            productCard.querySelector('.loadingText').remove();
+            
+            // Add location warning if needed
+            if (hasLocationWarning) {
+              const warningDiv = document.createElement('div');
+              warningDiv.className = 'locationWarning';
+              warningDiv.innerHTML = '⚠️ Wrong location returned - use search button to find product manually';
+              productCard.insertBefore(warningDiv, productCard.querySelector('.customLinkBox'));
+            }
+            
+            const optionsGrid = document.createElement('div');
+            optionsGrid.className = 'optionsGrid';
+            
+            options.forEach((option, index) => {
+              const optionCard = document.createElement('div');
+              optionCard.className = 'optionCard';
+              optionCard.setAttribute('data-option-index', index);
+              
+              optionCard.innerHTML = `
+                <div class="radioCircle"></div>
+                <img class="optionImage" src="${option.image_url || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23ddd\' width=\'100\' height=\'100\'/%3E%3C/svg%3E'}" alt="${option.name || 'Product'}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23ddd\' width=\'100\' height=\'100\'/%3E%3C/svg%3E'">
+                <div class="optionName">${option.name || 'Unknown Product'}</div>
+                <a href="${option.product_url || '#'}" target="_blank" class="optionPrice" onclick="event.stopPropagation();">${option.price || 'Price N/A'}</a>
+              `;
+              
+              optionCard.addEventListener('click', () => {
+                // Deselect all options for this product
+                optionsGrid.querySelectorAll('.optionCard').forEach(card => card.classList.remove('selected'));
+                // Select this option
+                optionCard.classList.add('selected');
+                // Store selection with cleaned URL
+                selectedOptions[product.id] = {
+                  url: cleanWalmartUrl(option.product_url),
+                  price: option.price
+                };
+                // Show complete button if any selections exist
+                updateCompleteButton();
+              });
+              
+              optionsGrid.appendChild(optionCard);
+            });
+            
+            productCard.appendChild(optionsGrid);
+          });
+          
+          btnFetchMissingLinks.textContent = 'Load Next 5 Products';
+          isOperationRunning = false;
+          updateOperationButtons();
+          
+        } catch (err) {
+          console.error('Error fetching missing links:', err);
+          alert('Failed to load missing links: ' + err.message);
+          btnFetchMissingLinks.textContent = 'Load Next 5 Products';
+          isOperationRunning = false;
+          updateOperationButtons();
+        }
+      }
+      
+      function cleanWalmartUrl(url) {
+        try {
+          // Extract just the product ID part of the URL
+          // Format: https://www.walmart.com/ip/{product-name}/{product-id}
+          const match = url.match(/^(https?:\/\/(?:www\.)?walmart\.com\/ip\/[^\/]+\/\d+)/);
+          if (match) {
+            return match[1];
+          }
+          return url; // Return original if no match
+        } catch (e) {
+          return url;
+        }
+      }
+      
+      function updateCompleteButton() {
+        // Check if there are any selections, custom links, or not_walmart checkboxes
+        const hasSelections = Object.keys(selectedOptions).length > 0;
+        const customLinkInputs = document.querySelectorAll('.customLinkInput');
+        const hasCustomLinks = Array.from(customLinkInputs).some(input => input.value.trim());
+        const notWalmartChecks = document.querySelectorAll('.notWalmartCheck:checked');
+        const hasNotWalmartChecks = notWalmartChecks.length > 0;
+        
+        btnCompleteLinkUpdates.style.display = (hasSelections || hasCustomLinks || hasNotWalmartChecks) ? 'block' : 'none';
+      }
+      
+      async function completeLinkUpdates() {
+        // Collect not_walmart checkboxes
+        const notWalmartChecks = document.querySelectorAll('.notWalmartCheck:checked');
+        const notWalmartIds = Array.from(notWalmartChecks).map(check => parseInt(check.getAttribute('data-product-id')));
+        
+        // Collect custom links (exclude items marked as not_walmart)
+        const customLinkInputs = document.querySelectorAll('.customLinkInput');
+        const customLinks = [];
+        customLinkInputs.forEach(input => {
+          const link = input.value.trim();
+          const productId = parseInt(input.getAttribute('data-product-id'));
+          if (link && productId && !notWalmartIds.includes(productId)) {
+            // Clean the URL to remove query parameters
+            const cleanLink = cleanWalmartUrl(link);
+            customLinks.push({ product_id: productId, walmart_link: cleanLink });
+          }
+        });
+        
+        // Filter selected options to exclude items marked as not_walmart
+        const filteredSelectedOptions = {};
+        Object.keys(selectedOptions).forEach(productId => {
+          const pid = parseInt(productId);
+          if (!notWalmartIds.includes(pid)) {
+            filteredSelectedOptions[productId] = selectedOptions[productId];
+          }
+        });
+        
+        // Check if there are any updates to process
+        const hasSelections = Object.keys(filteredSelectedOptions).length > 0;
+        const hasCustomLinks = customLinks.length > 0;
+        const hasNotWalmartFlags = notWalmartIds.length > 0;
+        
+        if (!hasSelections && !hasCustomLinks && !hasNotWalmartFlags) {
+          alert('Please select at least one option, paste a custom link, or mark items as not Walmart');
+          return;
+        }
+        
+        try {
+          btnCompleteLinkUpdates.disabled = true;
+          btnCompleteLinkUpdates.textContent = 'Updating...';
+          
+          // Mark not_walmart items first
+          if (hasNotWalmartFlags) {
+            btnCompleteLinkUpdates.textContent = `Marking ${notWalmartIds.length} as not Walmart...`;
+            try {
+              const notWalmartRes = await fetch('/api/walmart/mark-not-walmart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_ids: notWalmartIds })
+              });
+              
+              if (!notWalmartRes.ok) {
+                const errData = await notWalmartRes.json();
+                console.error('Failed to mark some items as not Walmart:', errData);
+              }
+            } catch (err) {
+              console.error('Error marking items as not Walmart:', err);
+            }
+          }
+          
+          // Prepare updates array from selections (excluding not_walmart items)
+          const updates = Object.keys(filteredSelectedOptions).map(productId => ({
+            product_id: parseInt(productId),
+            walmart_link: filteredSelectedOptions[productId].url,
+            price: filteredSelectedOptions[productId].price
+          }));
+          
+          // Process custom links - scrape prices first
+          if (customLinks.length > 0) {
+            btnCompleteLinkUpdates.textContent = `Scraping ${customLinks.length} custom link${customLinks.length > 1 ? 's' : ''}...`;
+            
+            for (const customLink of customLinks) {
+              try {
+                // Scrape the custom link for price
+                const scrapeRes = await fetch('/api/walmart/scrape-product', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: customLink.walmart_link })
+                });
+                
+                const scrapeData = await scrapeRes.json();
+                
+                if (scrapeRes.ok && scrapeData.price) {
+                  // Add to updates with scraped price
+                  updates.push({
+                    product_id: customLink.product_id,
+                    walmart_link: customLink.walmart_link,
+                    price: scrapeData.price
+                  });
+                } else {
+                  // Add without price if scraping failed
+                  console.warn(`Failed to scrape price for custom link: ${customLink.walmart_link}`);
+                  updates.push({
+                    product_id: customLink.product_id,
+                    walmart_link: customLink.walmart_link,
+                    price: null
+                  });
+                }
+              } catch (err) {
+                console.error(`Error scraping custom link: ${err.message}`);
+                // Still add the link even if scraping failed
+                updates.push({
+                  product_id: customLink.product_id,
+                  walmart_link: customLink.walmart_link,
+                  price: null
+                });
+              }
+            }
+          }
+          
+          // Send update request
+          btnCompleteLinkUpdates.textContent = 'Saving to Grocy...';
+          const res = await fetch('/api/walmart/update-selections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || 'Update failed');
+          }
+          
+          // Show success
+          let successMsg = '';
+          if (updates.length > 0 && hasNotWalmartFlags) {
+            successMsg = `✓ Updated ${updates.length} product${updates.length > 1 ? 's' : ''} & marked ${notWalmartIds.length} as not Walmart!`;
+          } else if (updates.length > 0) {
+            successMsg = `✓ Updated ${updates.length} product${updates.length > 1 ? 's' : ''}!`;
+          } else if (hasNotWalmartFlags) {
+            successMsg = `✓ Marked ${notWalmartIds.length} product${notWalmartIds.length > 1 ? 's' : ''} as not Walmart!`;
+          }
+          btnCompleteLinkUpdates.textContent = successMsg;
+          
+          // Clear the display after 2 seconds and reload counts
+          setTimeout(() => {
+            productOptionsContainer.innerHTML = '';
+            selectedOptions = {};
+            loadedProducts = [];
+            btnCompleteLinkUpdates.style.display = 'none';
+            btnCompleteLinkUpdates.textContent = 'Complete & Update Selected';
+            btnCompleteLinkUpdates.disabled = false;
+            loadMissingLinksCount();
+            loadMissingPricesCount();
+          }, 2000);
+          
+        } catch (err) {
+          console.error('Error completing link updates:', err);
+          alert('Failed to update: ' + err.message);
+          btnCompleteLinkUpdates.textContent = 'Complete & Update Selected';
+          btnCompleteLinkUpdates.disabled = false;
+        }
+      }
+      
+      async function loadNonWalmartItems() {
+        try {
+          const res = await fetch('/api/walmart/non-walmart-items');
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to load non-Walmart items');
+          }
+          
+          nonWalmartItems = data.items || [];
+          
+          if (nonWalmartItems.length > 0) {
+            // Display manual price entry UI
+            manualPriceSection.style.display = 'block';
+            manualPriceList.innerHTML = '';
+            
+            nonWalmartItems.forEach(item => {
+              const itemDiv = document.createElement('div');
+              itemDiv.style.display = 'grid';
+              itemDiv.style.gridTemplateColumns = '2fr 1fr';
+              itemDiv.style.gap = '12px';
+              itemDiv.style.alignItems = 'center';
+              itemDiv.style.padding = '12px';
+              itemDiv.style.background = '#fff';
+              itemDiv.style.border = '1px solid #ddd';
+              itemDiv.style.borderRadius = '6px';
+              
+              const nameSpan = document.createElement('span');
+              nameSpan.textContent = item.name;
+              nameSpan.style.fontWeight = '500';
+              
+              const priceInput = document.createElement('input');
+              priceInput.type = 'text';
+              priceInput.placeholder = '$0.00';
+              priceInput.setAttribute('data-product-id', item.id);
+              priceInput.className = 'manualPriceInput';
+              priceInput.style.padding = '8px';
+              priceInput.style.border = '1px solid #ccc';
+              priceInput.style.borderRadius = '4px';
+              priceInput.addEventListener('input', updateManualPriceButton);
+              
+              itemDiv.appendChild(nameSpan);
+              itemDiv.appendChild(priceInput);
+              manualPriceList.appendChild(itemDiv);
+            });
+            
+            updateManualPriceButton();
+          } else {
+            manualPriceSection.style.display = 'none';
+          }
+        } catch (err) {
+          console.error('Error loading non-Walmart items:', err);
+        }
+      }
+      
+      function updateManualPriceButton() {
+        const inputs = document.querySelectorAll('.manualPriceInput');
+        const hasAnyPrice = Array.from(inputs).some(input => input.value.trim());
+        btnCompleteManualPrices.style.display = hasAnyPrice ? 'block' : 'none';
+      }
+      
+      async function completeManualPrices() {
+        try {
+          btnCompleteManualPrices.disabled = true;
+          btnCompleteManualPrices.textContent = 'Updating...';
+          
+          const inputs = document.querySelectorAll('.manualPriceInput');
+          const updates = [];
+          
+          inputs.forEach(input => {
+            const price = input.value.trim();
+            const productId = parseInt(input.getAttribute('data-product-id'));
+            if (price && productId) {
+              updates.push({ product_id: productId, price: price });
+            }
+          });
+          
+          if (updates.length === 0) {
+            alert('Please enter at least one price');
+            btnCompleteManualPrices.disabled = false;
+            btnCompleteManualPrices.textContent = 'Complete Manual Prices';
+            return;
+          }
+          
+          const res = await fetch('/api/walmart/update-manual-prices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to update prices');
+          }
+          
+          btnCompleteManualPrices.textContent = `✓ Updated ${updates.length} price${updates.length > 1 ? 's' : ''}!`;
+          
+          setTimeout(() => {
+            manualPriceSection.style.display = 'none';
+            manualPriceList.innerHTML = '';
+            btnCompleteManualPrices.style.display = 'none';
+            btnCompleteManualPrices.textContent = 'Complete Manual Prices';
+            btnCompleteManualPrices.disabled = false;
+            loadMissingPricesCount();
+          }, 2000);
+          
+        } catch (err) {
+          console.error('Error completing manual prices:', err);
+          alert('Failed to update manual prices: ' + err.message);
+          btnCompleteManualPrices.textContent = 'Complete Manual Prices';
+          btnCompleteManualPrices.disabled = false;
+        }
+      }
+      
+      async function startPriceUpdate() {
+        try {
+          isOperationRunning = true;
+          updateOperationButtons();
+          btnStartPriceUpdate.textContent = 'Starting...';
+          priceUpdateProgress.style.display = 'none';
+          priceErrorList.innerHTML = '';
+          manualPriceSection.style.display = 'none';
+          
+          // Start both processes in parallel
+          const [walmartRes, nonWalmartLoad] = await Promise.all([
+            fetch('/api/walmart/start-price-update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            }),
+            loadNonWalmartItems()
+          ]);
+          
+          const data = await walmartRes.json();
+          
+          if (!walmartRes.ok) {
+            throw new Error(data.error || 'Failed to start price update');
+          }
+          
+          if (data.total === 0 && nonWalmartItems.length === 0) {
+            alert('No products need price updates!');
+            btnStartPriceUpdate.textContent = 'Start Price Update';
+            isOperationRunning = false;
+            updateOperationButtons();
+            return;
+          }
+          
+          if (data.total > 0) {
+            currentPriceJobId = data.job_id;
+            
+            // Show progress UI
+            priceUpdateProgress.style.display = 'block';
+            priceProgressBar.style.width = '0%';
+            priceProgressText.textContent = `0 / ${data.total}`;
+            
+            // Poll for status
+            pollPriceUpdateStatus();
+          } else {
+            // No Walmart items to update, just show manual entry
+            btnStartPriceUpdate.textContent = 'Start Price Update';
+            isOperationRunning = false;
+            updateOperationButtons();
+          }
+          
+        } catch (err) {
+          console.error('Error starting price update:', err);
+          alert('Failed to start price update: ' + err.message);
+          btnStartPriceUpdate.textContent = 'Start Price Update';
+          isOperationRunning = false;
+          updateOperationButtons();
+        }
+      }
+      
+      async function pollPriceUpdateStatus() {
+        if (!currentPriceJobId) return;
+        
+        try {
+          const res = await fetch(`/api/walmart/price-update-status/${currentPriceJobId}`);
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to get status');
+          }
+          
+          // Update progress
+          const percent = data.total > 0 ? (data.completed / data.total * 100) : 0;
+          priceProgressBar.style.width = percent + '%';
+          priceProgressText.textContent = `${data.completed} / ${data.total}`;
+          
+          // Update errors if any
+          if (data.errors && data.errors.length > 0) {
+            priceErrorList.innerHTML = data.errors.map(err => 
+              `<div class="errorItem">${err.product_name || 'Unknown'}: ${err.error}</div>`
+            ).join('');
+          }
+          
+          // Check if done
+          if (data.status === 'completed' || data.status === 'error') {
+            btnStartPriceUpdate.textContent = data.status === 'completed' 
+              ? `✓ Updated ${data.completed} prices!`
+              : '❌ Update failed';
+            
+            setTimeout(() => {
+              btnStartPriceUpdate.textContent = 'Start Price Update';
+              isOperationRunning = false;
+              currentPriceJobId = null;
+              updateOperationButtons();
+              loadMissingPricesCount();
+            }, 3000);
+          } else {
+            // Continue polling
+            setTimeout(pollPriceUpdateStatus, 1000);
+          }
+          
+        } catch (err) {
+          console.error('Error polling price update status:', err);
+          btnStartPriceUpdate.textContent = 'Start Price Update';
+          isOperationRunning = false;
+          currentPriceJobId = null;
+          updateOperationButtons();
+        }
+      }
+      
+      // Wire up Walmart Manager buttons
+      btnFetchMissingLinks.addEventListener('click', fetchAndDisplayMissingLinks);
+      btnCompleteLinkUpdates.addEventListener('click', completeLinkUpdates);
+      btnStartPriceUpdate.addEventListener('click', startPriceUpdate);
+      btnCompleteManualPrices.addEventListener('click', completeManualPrices);
+
+      // removed MAX_RED limit on new items
+      let scanOp = 'add'; // 'add' => Purchase, 'remove' => Consume, 'shopping' => Add to Shopping List
+      let items = []; // { key, barcode, product_id|null, name, servings, isRed, active, lastSavedServings|null, pendingSave:false, mealPlanEntryId:null, isMealPlanItem:false, lastConsumedAmount:null, operation, unitUsed, stockBefore, stockAfter, isNew, servingsPerContainer, amountAdded }
+      let activeKey = null;
+      let overwriteOnNextDigit = false;
+      let saveTimer = null;
+      let currentlySaving = new Set(); // Track items currently being saved
+
+      // Helper: Fetch current stock level in containers
+      async function fetchStockLevel(productId) {
+        try {
+          const res = await fetch(`/api/proxy/stock/products/${productId}`);
+          if (!res.ok) {
+            console.error('Stock fetch failed:', res.status, res.statusText);
+            return null;
+          }
+          const data = await res.json();
+          // Grocy returns stock_amount or amount
+          const stock = Number.isFinite(data.stock_amount) ? data.stock_amount : (Number.isFinite(data.amount) ? data.amount : null);
+          console.log(`Fetched stock for product ${productId}:`, stock, 'from data:', data);
+          return stock;
+        } catch (err) {
+          console.error('Failed to fetch stock level for product', productId, ':', err);
+          return null;
+        }
+      }
+
+      // Helper: Convert servings to containers
+      function convertServingsToContainers(servings, servingsPerContainer) {
+        const spc = Number.isFinite(servingsPerContainer) && servingsPerContainer > 0 ? servingsPerContainer : 1;
+        return servings / spc;
+      }
+
+      // Helper: Convert containers to servings
+      function convertContainersToServings(containers, servingsPerContainer) {
+        const spc = Number.isFinite(servingsPerContainer) && servingsPerContainer > 0 ? servingsPerContainer : 1;
+        return containers * spc;
+      }
+
+      // Update screen units display based on mode and unit toggle
+      function updateScreenUnits() {
+        if (scanOp === 'add') {
+          screenUnits.textContent = 'containers';
+          unitMode = 'containers';
+        } else if (scanOp === 'remove') {
+          screenUnits.textContent = unitMode;
+        } else if (scanOp === 'shopping') {
+          screenUnits.textContent = 'containers';
+          unitMode = 'containers';
+        }
+        
+        // Update button text
+        if (unitMode === 'servings') {
+          btnUnitToggle.textContent = 'Servings';
+        } else {
+          btnUnitToggle.textContent = 'Containers';
+        }
+      }
+
+      // Toggle between servings and containers (only active in consume mode)
+      async function toggleUnit() {
+        if (scanOp !== 'remove') return;
+        
+        const activeItem = getActiveItem();
+        if (!activeItem) return;
+        
+        // Fetch servings per container if not available
+        if (!Number.isFinite(activeItem.servingsPerContainer)) {
+          try {
+            const res = await fetch(`/api/products/${activeItem.product_id}/servings`);
+            const data = await res.json();
+            activeItem.servingsPerContainer = Number.isFinite(data.servings) ? data.servings : 1;
+          } catch {
+            activeItem.servingsPerContainer = 1;
+          }
+        }
+        
+        const currentValue = Number(screen.value) || 0;
+        let newValue;
+        
+        // Toggle unit mode
+        if (unitMode === 'servings') {
+          unitMode = 'containers';
+          newValue = convertServingsToContainers(currentValue, activeItem.servingsPerContainer);
+        } else {
+          unitMode = 'servings';
+          newValue = convertContainersToServings(currentValue, activeItem.servingsPerContainer);
+        }
+        
+        // Update the active item's unit
+        activeItem.unitUsed = unitMode;
+        
+        screen.value = String(Math.round(newValue * 100) / 100);
+        updateScreenUnits();
+        updateFromScreen();
+      }
+
+      function setMode(op) {
+        scanOp = op;
+        btnPurchase.classList.remove('active');
+        btnConsume.classList.remove('active');
+        btnAddToShopping.classList.remove('active');
+        
+        if (scanOp === 'add') {
+          btnPurchase.classList.add('active');
+          // Purchase mode: always containers
+          unitMode = 'containers';
+          btnUnitToggle.disabled = true;
+        } else if (scanOp === 'remove') {
+          btnConsume.classList.add('active');
+          // Consume mode: enable unit toggle, set default based on meal plan
+          btnUnitToggle.disabled = false;
+          unitMode = mealPlanEnabled ? 'servings' : 'containers';
+        } else if (scanOp === 'shopping') {
+          btnAddToShopping.classList.add('active');
+          // Shopping mode: always containers
+          unitMode = 'containers';
+          btnUnitToggle.disabled = true;
+        }
+        
+        updateScreenUnits();
+      }
+      btnPurchase.addEventListener('click', () => setMode('add'));
+      btnConsume.addEventListener('click', () => setMode('remove'));
+      btnAddToShopping.addEventListener('click', () => setMode('shopping'));
+      btnComplete.addEventListener('click', () => { 
+        const activeItem = getActiveItem();
+        if (activeItem) saveItemImmediate(activeItem);
+        try { barcodeInput.focus(); } catch (_) {} 
+      });
+      if (btnLogAll && btnLogNew) {
+        btnLogAll.addEventListener('click', () => { btnLogAll.classList.add('active'); btnLogNew.classList.remove('active'); renderQueue(); });
+        btnLogNew.addEventListener('click', () => { btnLogNew.classList.add('active'); btnLogAll.classList.remove('active'); renderQueue(); });
+      }
+
+      function beepBad() {
+        try {
+          const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+          const ctx = new AC();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square'; osc.frequency.value = 330;
+          gain.gain.value = 0.08;
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(); setTimeout(() => { osc.stop(); ctx.close(); }, 180);
+        } catch (_) {}
+      }
+
+      function redCount() { return items.filter(x => x.isRed).length; }
+      function showOnlyNew() { return btnLogNew && btnLogNew.classList.contains('active'); }
+
+      function renderQueue() {
+        queueEl.innerHTML = '';
+        items.forEach((it) => {
+          if (showOnlyNew() && !it.isRed) return;
+          const div = document.createElement('div');
+          const isActive = (it.key === activeKey);
+          div.className = 'queueItem' + (it.isRed ? ' red' : '') + (isActive ? ' active' : '');
+          if (isActive) div.style.outlineColor = 'var(--active)';
+          
+          // Row 1: Name
+          const name = document.createElement('div');
+          name.className = 'name';
+          name.textContent = it.name || 'Unknown';
+          
+          // Row 2: Details based on operation
+          const details = document.createElement('div');
+          details.className = 'details';
+          
+          if (it.operation === 'add') {
+            // Purchase mode
+            const amount = Number.isFinite(it.servings) ? it.servings : 1;
+            const unit = amount === 1 ? 'container' : 'containers';
+            const servingsPerContainer = Number.isFinite(it.servingsPerContainer) ? it.servingsPerContainer : '?';
+            let detailText = `Purchased: ${amount} ${unit} | ${servingsPerContainer} servings/container`;
+            if (it.isNew) {
+              const newBadge = document.createElement('span');
+              newBadge.className = 'badge new';
+              newBadge.textContent = 'NEW';
+              details.textContent = detailText + ' ';
+              details.appendChild(newBadge);
+            } else {
+              details.textContent = detailText;
+            }
+          } else if (it.operation === 'remove') {
+            // Consume mode - show what was actually consumed
+            // lastConsumedAmount is ALWAYS in servings (what was sent to backend)
+            // We need to display it in a human-readable way
+            
+            const actualServings = Number.isFinite(it.lastConsumedAmount) ? it.lastConsumedAmount : 0;
+            const servingsPerContainer = Number.isFinite(it.servingsPerContainer) ? it.servingsPerContainer : 1;
+            
+            let displayAmount, displayUnit;
+            
+            // If consumed a full container's worth of servings, show as containers
+            if (actualServings > 0 && actualServings % servingsPerContainer === 0) {
+              displayAmount = actualServings / servingsPerContainer;
+              displayUnit = displayAmount === 1 ? 'container' : 'containers';
+            } else if (actualServings > 0) {
+              // Otherwise show as servings
+              displayAmount = actualServings;
+              displayUnit = actualServings === 1 ? 'serving' : 'servings';
+            } else {
+              // Nothing consumed yet
+              displayAmount = 0;
+              displayUnit = 'servings';
+            }
+            
+            let detailText = `Consumed: ${displayAmount} ${displayUnit}`;
+            
+            // Add stock levels if available
+            if (Number.isFinite(it.stockBefore) && Number.isFinite(it.stockAfter)) {
+              const before = Math.round(it.stockBefore * 100) / 100;
+              const after = Math.round(it.stockAfter * 100) / 100;
+              detailText += ` | Stock: ${before} → ${after}`;
+            }
+            
+            // Add MP badge at end of details if meal plan item
+            if (it.isMealPlanItem) {
+              details.textContent = detailText + ' ';
+              const mpBadge = document.createElement('span');
+              mpBadge.className = 'badge mp';
+              mpBadge.textContent = 'MP';
+              details.appendChild(mpBadge);
+            } else {
+              details.textContent = detailText;
+            }
+          } else if (it.operation === 'shopping') {
+            // Shopping mode - show diff (amount added/removed)
+            const currentAmount = Number.isFinite(it.servings) ? it.servings : 1;
+            const beforeAmount = Number.isFinite(it.lastSavedServings) ? it.lastSavedServings : 0;
+            const diff = currentAmount - beforeAmount;
+            const absDiff = Math.abs(diff);
+            const unit = absDiff === 1 ? 'container' : 'containers';
+            
+            if (diff > 0) {
+              details.textContent = `Added: ${absDiff} ${unit}`;
+            } else if (diff < 0) {
+              details.textContent = `Removed: ${absDiff} ${unit}`;
+            } else {
+              details.textContent = `0 containers`;
+            }
+          } else {
+            // Fallback for items without operation set
+            const amount = Number.isFinite(it.servings) ? it.servings : 1;
+            details.textContent = `${amount}`;
+          }
+          
+          // Right column
+          const right = document.createElement('div');
+          right.className = 'right';
+          
+          if (it.operation === 'add') {
+            // Purchase: show new stock level
+            if (Number.isFinite(it.stockAfter)) {
+              right.textContent = `Stock: ${Math.round(it.stockAfter * 100) / 100}`;
+            } else {
+              right.textContent = 'Stock: —';
+            }
+          } else if (it.operation === 'remove') {
+            // Consume: show keypad amount in the current unit mode
+            const amount = Number.isFinite(it.servings) ? it.servings : 1;
+            const unitUsed = it.unitUsed || unitMode;
+            const unit = amount === 1 ? unitUsed.slice(0, -1) : unitUsed; // singular/plural
+            right.textContent = `${amount} ${unit}`;
+          } else if (it.operation === 'shopping') {
+            // Shopping: show total in shopping list
+            const currentAmount = Number.isFinite(it.servings) ? it.servings : 1;
+            const unit = currentAmount === 1 ? 'container' : 'containers';
+            right.textContent = `${currentAmount} ${unit} in shopping list`;
+          } else {
+            // Fallback for legacy items without operation field
+            // Try to show servings or leave empty
+            if (Number.isFinite(it.servings) && it.servings > 0) {
+              right.textContent = `${it.servings}`;
+            }
+          }
+          
+          div.appendChild(name);
+          div.appendChild(details);
+          div.appendChild(right);
+          div.addEventListener('click', () => selectItem(it.key));
+          queueEl.appendChild(div);
+        });
+      }
+
+      function selectItem(key) {
+        console.log(`[selectItem] Called with key=${key}, current activeKey=${activeKey}`);
+        
+        // Get the new item first
+        const it = items.find(i => i.key === key);
+        console.log(`[selectItem] Found item: key=${it?.key}, servings=${it?.servings}, lastConsumedAmount=${it?.lastConsumedAmount}`);
+        
+        // Save previous item if switching (BEFORE changing screen values)
+        const prevItem = items.find(i => i.key === activeKey);
+        if (prevItem && activeKey !== key) {
+          console.log(`[selectItem] Switching from ${activeKey} to ${key}, saving previous item`);
+          // Update the previous item's value from screen before saving
+          const currentScreenValue = clampServings(Number(screen.value));
+          if (prevItem.operation === 'add') {
+            // For purchase items, screen shows servings/container, NOT quantity
+            // Don't update servings, update servingsPerContainer
+            prevItem.servingsPerContainer = currentScreenValue;
+          } else {
+            // For other items (consume/shopping), screen shows quantity
+            prevItem.servings = currentScreenValue;
+          }
+          saveItemImmediate(prevItem);
+        }
+        
+        activeKey = key;
+        items.forEach(i => { i.active = (i.key === key); });
+        if (it) it.isRed = false; // acknowledge on click
+        
+        // If selecting a purchase item, override to servings per container mode
+        if (it && it.operation === 'add') {
+          screenUnits.textContent = 'servings/container';
+          // Load existing servingsPerContainer value, or fetch it if not cached
+          if (Number.isFinite(it.servingsPerContainer)) {
+            screen.value = String(it.servingsPerContainer);
+          } else {
+            // Fetch from server
+            (async () => {
+              try {
+                const res = await fetch(`/api/products/${it.product_id}/servings`);
+                const data = await res.json();
+                it.servingsPerContainer = Number.isFinite(data.servings) ? data.servings : 1;
+                screen.value = String(it.servingsPerContainer);
+                renderQueue(); // Update display
+              } catch {
+                it.servingsPerContainer = 1;
+                screen.value = '1';
+              }
+            })();
+            screen.value = '1'; // Temporary value while fetching
+          }
+        } else {
+          // Not a purchase item - reset to normal mode
+          // If item has a unitUsed, restore that unit mode
+          if (it && it.unitUsed) {
+            unitMode = it.unitUsed;
+          }
+          // Update screen units based on current mode
+          updateScreenUnits();
+          
+          // Default value: always 1 now that we have unit switcher
+          const v = Number.isFinite(it && it.servings) ? it.servings : 1;
+          screen.value = String(v);
+        }
+        
+        setTimeout(() => { try { screen.focus(); screen.select(); } catch (_) {} }, 0);
+        overwriteOnNextDigit = true;
+        document.getElementById('activeName').textContent = it ? (it.name || 'Unnamed') : 'No item selected';
+        renderQueue();
+      }
+
+      function getActiveItem() { return items.find(i => i.key === activeKey) || null; }
+
+      function clampServings(n) { 
+        const num = Number(n); 
+        if (!Number.isFinite(num)) return scanOp === 'remove' ? 0 : 1; 
+        // For consume mode, allow 0; for others, minimum is 1
+        const minVal = scanOp === 'remove' ? 0 : 1;
+        const v = Math.max(minVal, num); 
+        return Math.round(v * 100) / 100; 
+      }
+
+      function updateFromScreen() {
+        const it = getActiveItem();
+        if (!it) return;
+        
+        console.log(`[updateFromScreen] Item key=${it.key}, servings=${it.servings}, lastConsumedAmount=${it.lastConsumedAmount}`);
+        
+        const raw = String(screen.value || '');
+        // If mid-typing a decimal like "1." or just ".", defer updates
+        if (raw === '.' || /^(\d+)\.$/.test(raw)) return;
+        const v = clampServings(raw);
+        if (!Number.isFinite(v)) return;
+        
+        console.log(`[updateFromScreen] Updating servings from ${it.servings} to ${v}`);
+        
+        it.servings = v;
+        // Update item's unit to current unit mode (so saveItem knows what to convert)
+        it.unitUsed = unitMode;
+        scheduleSave(it);
+        renderQueue();
+      }
+
+      function onDigit(d) {
+        if (overwriteOnNextDigit) {
+          screen.value = String(d);
+          overwriteOnNextDigit = false;
+        } else {
+          const s = String(screen.value || '');
+          screen.value = (s === '0') ? String(d) : (s + String(d));
+        }
+        updateFromScreen();
+      }
+
+      function onBackspace() {
+        const s = String(screen.value || '');
+        screen.value = s.length > 1 ? s.slice(0, -1) : '0';
+        overwriteOnNextDigit = false;
+        updateFromScreen();
+      }
+
+      function onDot() {
+        const s = String(screen.value || '');
+        if (s.includes('.')) return;
+        if (overwriteOnNextDigit || s === '0') {
+          screen.value = '0.';
+          overwriteOnNextDigit = false;
+        } else {
+          screen.value = s + '.';
+        }
+        updateFromScreen();
+      }
+
+      function scheduleSave(it) {
+        console.log(`[scheduleSave] Scheduling save for item key=${it?.key}, servings=${it?.servings}, lastConsumedAmount=${it?.lastConsumedAmount}`);
+        if (saveTimer) {
+          console.log(`[scheduleSave] Cancelling previous save timer`);
+          clearTimeout(saveTimer);
+        }
+        // Use immediate save for purchase items (servings per container editing)
+        // Use 5 seconds for consume mode, 500ms for shopping
+        let delay = 500;
+        if (it && it.operation === 'add') {
+          delay = 300; // Fast save for servings per container
+        } else if (scanOp === 'remove') {
+          delay = 5000; // Longer delay for consume mode
+        }
+        console.log(`[scheduleSave] Will save in ${delay}ms`);
+        saveTimer = setTimeout(() => {
+          console.log(`[scheduleSave] Timer fired, calling saveItem`);
+          saveTimer = null; // Clear the timer reference
+          saveItem(it);
+        }, delay);
+      }
+      
+      function saveItemImmediate(it) {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveItem(it);
+      }
+
+      async function saveItem(it) {
+        console.log(`[FRONTEND] ========== saveItem CALLED ==========`);
+        console.log(`[FRONTEND] Item key: ${it?.key}, product_id: ${it?.product_id}, name: ${it?.name}`);
+        console.log(`[FRONTEND] Item servings: ${it?.servings}, lastConsumedAmount: ${it?.lastConsumedAmount}`);
+        console.log(`[FRONTEND] scanOp: ${scanOp}, operation: ${it?.operation}`);
+        
+        if (!it || !Number.isFinite(Number(it.product_id))) return; // wait until we know product id
+        
+        // Prevent concurrent saves of the same item
+        if (currentlySaving.has(it.key)) {
+          console.log(`[FRONTEND] Save already in progress for item ${it.key}, skipping`);
+          return;
+        }
+        
+        currentlySaving.add(it.key);
+        
+        try {
+        
+        // For purchase mode OR editing a purchase item (servings per container)
+        if (scanOp === 'add' || (it && it.operation === 'add')) {
+          // For purchase items, use servingsPerContainer, NOT servings
+          const val = Number.isFinite(it.servingsPerContainer) ? it.servingsPerContainer : clampServings(it.servings);
+          if (Number(it.lastSavedServings) === val) return;
+          try {
+            const res = await fetch(`/api/products/${it.product_id}/servings`, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ servings: val })
+            });
+            if (!res.ok) throw new Error((await res.json()).error || 'save failed');
+            it.lastSavedServings = val;
+            it.servingsPerContainer = val; // Update cached value
+            
+            // Fetch updated stock after setting servings per container
+            it.stockAfter = await fetchStockLevel(it.product_id);
+            
+            statusText.textContent = 'Saved';
+            setTimeout(() => { if (statusText.textContent === 'Saved') statusText.textContent = ''; }, 1200);
+            renderQueue();
+          } catch (e) {
+            statusText.textContent = 'Save error: ' + (e && e.message || e);
+          }
+          return;
+        }
+        
+        // For consume mode, use diff-based approach
+        if (scanOp === 'remove') {
+          const val = clampServings(it.servings);
+          // Fetch stock before consume ONLY if not already set (keep original stock)
+          let stockBeforeConsume = it.stockBefore;
+          if (!Number.isFinite(stockBeforeConsume)) {
+            stockBeforeConsume = await fetchStockLevel(it.product_id);
+            it.stockBefore = stockBeforeConsume; // Save the ORIGINAL stock
+          }
+          
+          // Ensure we have servingsPerContainer for proper conversion
+          if (!Number.isFinite(it.servingsPerContainer)) {
+            try {
+              const ufRes = await fetch(`/api/products/${it.product_id}/servings`);
+              const ufData = await ufRes.json();
+              it.servingsPerContainer = Number.isFinite(ufData.servings) ? ufData.servings : 1;
+            } catch {
+              it.servingsPerContainer = 1;
+            }
+          }
+          
+          // Convert UI value to actual servings based on unit mode
+          let actualServings = val;
+          
+          // Check unit mode stored in item
+          const currentUnitMode = it.unitUsed || unitMode;
+          
+          if (currentUnitMode === 'containers') {
+            // User entered containers, convert to servings
+            actualServings = val * it.servingsPerContainer;
+          } else {
+            // User entered servings, use as-is
+            actualServings = val;
+          }
+          
+          // Legacy: if val is 0, treat as 1 full container
+          if (val === 0) {
+            actualServings = it.servingsPerContainer;
+          }
+          
+          console.log(`[FRONTEND] Product ${it.product_id}: Keypad=${val}, Unit=${currentUnitMode}`);
+          console.log(`[FRONTEND] servingsPerContainer cached: ${it.servingsPerContainer}`);
+          console.log(`[FRONTEND] Converting to servings: ${actualServings}`);
+          console.log(`[FRONTEND] Expected containers: ${actualServings / it.servingsPerContainer}`);
+          
+          const lastConsumed = Number(it.lastConsumedAmount) || 0;
+          console.log(`[FRONTEND] lastConsumedAmount BEFORE save: ${it.lastConsumedAmount}`);
+          console.log(`[FRONTEND] lastConsumed (normalized): ${lastConsumed}`);
+          
+          if (lastConsumed === actualServings) {
+            console.log(`[FRONTEND] No change needed, actualServings=${actualServings} matches lastConsumed=${lastConsumed}`);
+            return; // No change
+          }
+          
+          const diff = actualServings - lastConsumed;
+          console.log(`[FRONTEND] DIFF CALCULATION: ${actualServings} - ${lastConsumed} = ${diff}`);
+          console.log(`[FRONTEND] Will ${diff > 0 ? 'CONSUME' : 'ADD'} ${Math.abs(diff)} servings (${Math.abs(diff / it.servingsPerContainer)} containers)`);
+          
+          try {
+            // Consume or purchase the difference
+            // Note: We pass servings to the backend, which converts to containers
+            // e.g., 1 serving with 2 servings/container = 0.5 containers consumed in Grocy
+            if (diff !== 0) {
+              const res = await fetch(`/api/consume-or-purchase`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  product_id: it.product_id, 
+                  amount: diff // Amount in SERVINGS - backend converts to containers
+                })
+              });
+              if (!res.ok) throw new Error((await res.json()).error || 'operation failed');
+            }
+            
+            // Update meal plan if this is a meal plan item
+            if (it.isMealPlanItem && it.mealPlanEntryId) {
+              const mpRes = await fetch(`/api/meal-plan/${it.mealPlanEntryId}/servings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ servings: actualServings })
+              });
+              if (!mpRes.ok) throw new Error((await mpRes.json()).error || 'meal plan update failed');
+            }
+            
+            // Fetch stock after consume
+            const stockAfterConsume = await fetchStockLevel(it.product_id);
+            // Don't update stockBefore - keep the original value from first scan
+            it.stockAfter = stockAfterConsume;
+            it.unitUsed = unitMode; // Update unit used
+            
+            console.log(`[FRONTEND] SAVE COMPLETE - Setting lastConsumedAmount from ${it.lastConsumedAmount} to ${actualServings}`);
+            it.lastConsumedAmount = actualServings;
+            console.log(`[FRONTEND] lastConsumedAmount AFTER save: ${it.lastConsumedAmount}`);
+            console.log(`[FRONTEND] Stock changed: ${stockBeforeConsume} → ${stockAfterConsume}`);
+            
+            statusText.textContent = 'Saved';
+            setTimeout(() => { if (statusText.textContent === 'Saved') statusText.textContent = ''; }, 1200);
+            renderQueue();
+          } catch (e) {
+            statusText.textContent = 'Save error: ' + (e && e.message || e);
+          }
+          return;
+        }
+        
+        // For shopping mode, directly set the amount in shopping list
+        if (scanOp === 'shopping' || (it && it.operation === 'shopping')) {
+          const newAmount = clampServings(it.servings);
+          
+          try {
+            // Get current amount in shopping list
+            const amountRes = await fetch(`/api/shopping/amount/${it.product_id}?shopping_list_id=1`);
+            const amountData = await amountRes.json();
+            const currentAmount = Number(amountData.amount || 0);
+            
+            if (currentAmount === newAmount) return; // No change needed
+            
+            const diff = newAmount - currentAmount;
+            
+            if (diff > 0) {
+              // Add more to shopping list
+              const res = await fetch(`/api/shopping/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: it.product_id, amount: diff })
+              });
+              if (!res.ok) throw new Error((await res.json()).error || 'add failed');
+            } else if (diff < 0) {
+              // Remove from shopping list
+              const res = await fetch(`/api/shopping/remove`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: it.product_id, amount: Math.abs(diff) })
+              });
+              if (!res.ok) throw new Error((await res.json()).error || 'remove failed');
+            }
+            
+            statusText.textContent = 'Saved';
+            setTimeout(() => { if (statusText.textContent === 'Saved') statusText.textContent = ''; }, 1200);
+            renderQueue();
+          } catch (e) {
+            statusText.textContent = 'Save error: ' + (e && e.message || e);
+          }
+        }
+        
+        } finally {
+          // Always clear the saving flag, even on early returns
+          currentlySaving.delete(it.key);
+          console.log(`[FRONTEND] Cleared saving flag for item ${it.key}`);
+        }
+      }
+
+      // Keypad wiring
+      document.querySelectorAll('[data-digit]').forEach(btn => btn.addEventListener('click', () => onDigit(Number(btn.dataset.digit))));
+      document.querySelector('[data-act="backspace"]').addEventListener('click', onBackspace);
+      const dotBtn = document.querySelector('[data-act="dot"]'); if (dotBtn) dotBtn.addEventListener('click', onDot);
+      btnUnitToggle.addEventListener('click', toggleUnit);
+      screen.addEventListener('input', () => { overwriteOnNextDigit = false; updateFromScreen(); });
+
+      // Scanning flow: enqueue job, then attach item to queue, then enrich via summary
+      barcodeInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); await submitScan(); }
+      });
+      
+      // Save current item when barcode input is focused
+      barcodeInput.addEventListener('focus', () => {
+        const activeItem = getActiveItem();
+        if (activeItem) {
+          saveItemImmediate(activeItem);
+        }
+      });
+
+      // Global barcode scanner detector: capture rapid digits followed by Enter and redirect to barcode input
+      let scanBuffer = '';
+      let lastKeystrokeTime = 0;
+      const SCAN_SPEED_THRESHOLD = 50; // ms between keys to consider as scanner input
+      const MIN_BARCODE_LENGTH = 6;
+      const MAX_BARCODE_LENGTH = 24;
+      let scanResetTimer = null;
+      let scanningBurstActive = false; // true when we've identified a scanner burst
+      let screenPrevValue = null; // keypad screen previous value when burst starts
+
+      function isProtectedTarget(el) {
+        if (!el) return false;
+        // Do not intercept when typing in known inputs
+        if (el.id && (
+          el.id === 'tempItemName' ||
+          el.id === 'tempItemCals' ||
+          el.id === 'tempItemCarbs' ||
+          el.id === 'tempItemFats' ||
+          el.id === 'tempItemProtein' ||
+          el.id === 'barcode' // already in barcode box
+        )) return true;
+        if (el.classList && (
+          el.classList.contains('customLinkInput') ||
+          el.classList.contains('manualPriceInput')
+        )) return true;
+        const tag = (el.tagName || '').toLowerCase();
+        // Allow interception for keypad 'screen' input; protect other inputs
+        if ((tag === 'input' || tag === 'textarea') && el.id !== 'screen') return true;
+        return false;
+      }
+
+      function resetScanBufferSoon() {
+        if (scanResetTimer) clearTimeout(scanResetTimer);
+        // Clear buffer if no activity for 300ms
+        scanResetTimer = setTimeout(() => { scanBuffer = ''; scanningBurstActive = false; }, 300);
+      }
+
+      document.addEventListener('keydown', (e) => {
+        try {
+          const activeEl = document.activeElement;
+          const isScreenFocused = !!(activeEl && activeEl.id === 'screen');
+          // Don't intercept when the user is typing in protected fields (except keypad screen)
+          if (isProtectedTarget(activeEl)) { scanBuffer = ''; scanningBurstActive = false; return; }
+
+          const now = Date.now();
+          const delta = now - lastKeystrokeTime;
+
+          // Digits: accumulate into buffer when arriving quickly (scanner-like)
+          if (e.key >= '0' && e.key <= '9') {
+            if (isScreenFocused) {
+              // Special handling to avoid mutating keypad screen when detecting a scan burst
+              if (scanBuffer.length === 0) {
+                // Capture previous value on first digit
+                screenPrevValue = screen.value;
+              }
+
+              if (delta < SCAN_SPEED_THRESHOLD || scanBuffer.length === 0) {
+                scanBuffer += e.key;
+                // If this is the second fast digit, treat as scanner and prevent input effects
+                if (!scanningBurstActive && scanBuffer.length >= 2 && delta < SCAN_SPEED_THRESHOLD) {
+                  scanningBurstActive = true;
+                  // Prevent current key from affecting the screen and revert first digit side-effect
+                  e.preventDefault();
+                  if (screenPrevValue != null) {
+                    screen.value = screenPrevValue;
+                    try { if (saveTimer) clearTimeout(saveTimer); } catch (_) {}
+                  }
+                } else if (scanningBurstActive) {
+                  e.preventDefault();
+                }
+              } else {
+                // Slow typing -> human; reset scanner detection
+                scanBuffer = e.key;
+                scanningBurstActive = false;
+              }
+
+              lastKeystrokeTime = now;
+              resetScanBufferSoon();
+              return;
+            } else {
+              // Non-screen context: accumulate but don't block default behavior
+              if (delta < SCAN_SPEED_THRESHOLD || scanBuffer.length === 0) {
+                scanBuffer += e.key;
+              } else {
+                scanBuffer = e.key;
+              }
+              lastKeystrokeTime = now;
+              resetScanBufferSoon();
+              return;
+            }
+          }
+
+          // Enter (or NumpadEnter): commit if buffer looks like a barcode
+          if ((e.key === 'Enter' || e.code === 'NumpadEnter') && scanBuffer.length >= MIN_BARCODE_LENGTH && scanBuffer.length <= MAX_BARCODE_LENGTH) {
+            e.preventDefault();
+            e.stopPropagation();
+            barcodeInput.value = scanBuffer;
+            scanBuffer = '';
+            scanningBurstActive = false;
+            try { barcodeInput.focus(); } catch (_) {}
+            // Submit the scan
+            submitScan();
+            return;
+          }
+
+          // Any other key (besides modifiers) clears the buffer
+          const isModifier = (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta');
+          if (!isModifier) {
+            scanBuffer = '';
+            scanningBurstActive = false;
+          }
+        } catch (_) {
+          // Fail-safe: do not block user input on errors
+          scanBuffer = '';
+          scanningBurstActive = false;
+        }
+      });
+
+      async function submitScan() {
+        const barcode = barcodeInput.value.trim();
+        if (!barcode) { statusText.textContent = 'Enter a barcode'; return; }
+        
+        // Handle shopping mode differently - directly add to shopping list
+        if (scanOp === 'shopping') {
+          statusText.textContent = 'Looking up product...';
+          try {
+            // Get product by barcode
+            const summaryRes = await fetch(`/api/products/summary/by-barcode/${encodeURIComponent(barcode)}`);
+            const summary = await summaryRes.json();
+            
+            if (!summary.exists || !Number.isFinite(Number(summary.product_id))) {
+              statusText.textContent = 'Product not found. Scan in Purchase mode first.';
+              beepBad();
+              setTimeout(() => { statusText.textContent = ''; }, 2000);
+              barcodeInput.value = '';
+              barcodeInput.focus();
+              return;
+            }
+            
+            const pid = Number(summary.product_id);
+            
+            // Get current amount in shopping list BEFORE adding
+            statusText.textContent = 'Checking shopping list...';
+            const amountResBefore = await fetch(`/api/shopping/amount/${pid}?shopping_list_id=1`);
+            const amountDataBefore = await amountResBefore.json();
+            const amountBefore = Number(amountDataBefore.amount || 0);
+            
+            // Add to shopping list
+            const amountToAdd = 1; // Always add 1 container in shopping mode
+            statusText.textContent = 'Adding to shopping list...';
+            const addRes = await fetch(`/api/shopping/add`, { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ product_id: pid, amount: amountToAdd }) 
+            });
+            const addData = await addRes.json();
+            
+            if (!addRes.ok) throw new Error(addData && addData.error || 'Failed to add');
+            
+            // Get actual amount in shopping list AFTER adding
+            const amountResAfter = await fetch(`/api/shopping/amount/${pid}?shopping_list_id=1`);
+            const amountDataAfter = await amountResAfter.json();
+            const amountAfter = Number(amountDataAfter.amount || 0);
+            
+            // Create item in queue for visual feedback
+            const key = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            const item = {
+              key,
+              barcode,
+              product_id: pid,
+              name: summary.name || 'Unknown',
+              servings: amountAfter, // Total amount in shopping list
+              isRed: false,
+              active: false,
+              lastSavedServings: amountBefore, // Amount BEFORE this scan (for diff calculation)
+              mealPlanEntryId: null,
+              isMealPlanItem: false,
+              lastConsumedAmount: null,
+              operation: 'shopping',
+              unitUsed: 'containers',
+              stockBefore: null,
+              stockAfter: null,
+              isNew: false,
+              servingsPerContainer: null,
+              amountAdded: amountToAdd // Track how much was added in this scan
+            };
+            items.unshift(item);
+            if (items.length > 100) items = items.slice(0, 100);
+            renderQueue();
+            
+            statusText.textContent = `Added ${summary.name} to shopping list`;
+            setTimeout(() => { if (statusText.textContent.startsWith('Added')) statusText.textContent = ''; }, 1500);
+            barcodeInput.value = '';
+            barcodeInput.focus();
+          } catch (err) {
+            statusText.textContent = 'Error: ' + err.message;
+            beepBad();
+            setTimeout(() => { statusText.textContent = ''; }, 2000);
+          }
+          return;
+        }
+        
+        /* removed limit on number of new items */
+        statusText.textContent = 'Submitting...';
+        try {
+          const res = await fetch(`/api/scan/${scanOp}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ barcode }) });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data && data.error || 'Request failed');
+          const key = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          // Set default servings and unit based on mode and meal plan state
+          let defaultServings = 1;
+          let defaultUnit = unitMode;
+          if (scanOp === 'add') {
+            defaultServings = 1;
+            defaultUnit = 'containers';
+          } else if (scanOp === 'remove') {
+            defaultServings = 1;
+            defaultUnit = mealPlanEnabled ? 'servings' : 'containers';
+          } else if (scanOp === 'shopping') {
+            defaultServings = 1;
+            defaultUnit = 'containers';
+          }
+          
+          const item = { 
+            key, 
+            barcode, 
+            product_id: null, 
+            name: 'Scanning…', 
+            servings: defaultServings, 
+            isRed: false, 
+            active: false, 
+            lastSavedServings: null,
+            mealPlanEntryId: null,
+            isMealPlanItem: false,
+            lastConsumedAmount: null,
+            operation: scanOp,
+            unitUsed: defaultUnit,
+            stockBefore: null,
+            stockAfter: null,
+            isNew: false,
+            servingsPerContainer: null
+          };
+          items.unshift(item);
+          if (items.length > 100) items = items.slice(0, 100);
+          // do not auto-select; keep keypad inactive until user clicks an item
+          barcodeInput.value = ''; barcodeInput.focus();
+          renderQueue();
+          pollJob(data.jobId, barcode, key);
+        } catch (err) {
+          statusText.textContent = 'Error: ' + err.message;
+        }
+      }
+
+      async function pollJob(jobId, barcode, key) {
+        let done = false;
+        const currentOp = scanOp; // Capture current operation mode
+        while (!done) {
+          await new Promise(r => setTimeout(r, 700));
+          const res = await fetch(`/api/jobs/${jobId}`);
+          const data = await res.json();
+          if (!res.ok) { statusText.textContent = 'Job error: ' + (data && data.error); return; }
+          if (data.status === 'done') {
+            done = true;
+            if (data.result && data.result.status === 'ok') {
+              statusText.textContent = 'Success';
+              
+              // If meal plan toggle is enabled and we're in consume mode, add to meal plan
+              if (mealPlanEnabled && currentOp === 'remove') {
+                try {
+                  const entryId = await addConsumedItemToMealPlan(barcode, key);
+                  statusText.textContent = 'Success + Added to Meal Plan';
+                } catch (err) {
+                  console.error('Failed to add to meal plan:', err);
+                  statusText.textContent = 'Success (meal plan add failed)';
+                }
+              }
+            } else {
+              statusText.textContent = 'Failed';
+            }
+            try { await enrichItemFromSummary(barcode, key, data.result, currentOp); } catch (_) {}
+            setTimeout(() => { 
+              if (statusText.textContent.startsWith('Success')) statusText.textContent = ''; 
+            }, 1200);
+          }
+        }
+      }
+      
+      async function addConsumedItemToMealPlan(barcode, key) {
+        // Get product by barcode
+        const summaryRes = await fetch(`/api/products/summary/by-barcode/${encodeURIComponent(barcode)}`);
+        const summary = await summaryRes.json();
+        
+        if (!summary.exists || !Number.isFinite(Number(summary.product_id))) {
+          throw new Error('Product not found');
+        }
+        
+        const productId = Number(summary.product_id);
+        
+        // Find the item in the queue
+        const item = items.find(i => i.key === key);
+        if (!item) throw new Error('Item not found in queue');
+        
+        // Get the servings value (defaults to 0 for consume mode)
+        let servingsValue = Number.isFinite(item.servings) ? item.servings : 0;
+        
+        // Get current day from backend (respects custom day boundaries)
+        const daySummaryRes = await fetch('/api/macros/day-summary');
+        const daySummary = await daySummaryRes.json();
+        const today = daySummary.day; // Use day from backend which respects DAY_START_TIME
+        
+        // Get product details to find the quantity unit ID and num_servings
+        const productRes = await fetch(`/api/proxy/objects/products/${productId}`);
+        const product = await productRes.json();
+        const quId = product.qu_id_stock || product.qu_id_purchase || null;
+        
+        // If servings is 0, convert to num_servings from userfields
+        let actualServings = servingsValue;
+        if (servingsValue === 0) {
+          try {
+            const ufRes = await fetch(`/api/products/${productId}/servings`);
+            const ufData = await ufRes.json();
+            actualServings = Number.isFinite(ufData.servings) ? ufData.servings : 1;
+          } catch {
+            actualServings = 1; // Fallback
+          }
+        }
+        
+        // Add to meal plan
+        const addRes = await fetch('/api/proxy/objects/meal_plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            day: today,
+            type: 'product',
+            product_id: productId,
+            product_amount: actualServings,
+            product_qu_id: quId
+          })
+        });
+        
+        if (!addRes.ok) {
+          const errData = await addRes.json();
+          throw new Error(errData.error || 'Failed to add to meal plan');
+        }
+        
+        const mealPlanEntry = await addRes.json();
+        const entryId = mealPlanEntry.created_object_id || mealPlanEntry.id;
+        
+        // Mark as done if we got an entry ID
+        if (entryId) {
+          const doneFields = ['done', 'is_done', 'completed'];
+          for (const field of doneFields) {
+            try {
+              await fetch(`/api/proxy/objects/meal_plan/${entryId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [field]: true })
+              });
+              break; // Success, exit loop
+            } catch (_) {
+              // Try next field
+            }
+          }
+          
+          // Update the item to mark it as a meal plan item
+          item.mealPlanEntryId = entryId;
+          item.isMealPlanItem = true;
+          item.lastConsumedAmount = actualServings;
+          item.servings = actualServings; // Update displayed servings
+          renderQueue();
+        }
+        
+        return entryId;
+      }
+
+      async function enrichItemFromSummary(barcode, key, jobResult, operationMode) {
+        try {
+          const res = await fetch(`/api/products/summary/by-barcode/${encodeURIComponent(barcode)}`);
+          const s = await res.json();
+          const it = items.find(i => i.key === key);
+          if (!it) return;
+          if (s && s.exists) {
+            it.product_id = Number(s.product_id);
+            it.name = s.name || it.name;
+            // Mark red only if job created a product; existing products are not red
+            const wasCreated = !!(jobResult && jobResult.created_product);
+            it.isRed = wasCreated;
+            it.isNew = wasCreated;
+            
+            // Fetch servings per container
+            try {
+              const ufRes = await fetch(`/api/products/${it.product_id}/servings`);
+              const ufData = await ufRes.json();
+              it.servingsPerContainer = Number.isFinite(ufData.servings) ? ufData.servings : 1;
+            } catch {
+              it.servingsPerContainer = 1;
+            }
+            
+            // Fetch stock levels for purchase and consume operations
+            if (operationMode === 'add') {
+              // Purchase: fetch stock after purchase
+              it.stockAfter = await fetchStockLevel(it.product_id);
+              console.log('Purchase - stockAfter:', it.stockAfter);
+            } else if (operationMode === 'remove') {
+              // Consume: Backend no longer consumes immediately, we handle it here
+              it.stockBefore = await fetchStockLevel(it.product_id);
+              
+              // Set initial lastConsumedAmount to 0 (nothing consumed yet)
+              it.lastConsumedAmount = 0;
+              
+              // Set default servings based on meal plan state
+              it.servings = 1;
+              // Set unit based on meal plan state
+              it.unitUsed = it.isMealPlanItem ? 'servings' : 'containers';
+              
+              // Reset global unitMode to match this item's default
+              unitMode = it.unitUsed;
+              updateScreenUnits();
+              
+              // Trigger initial consume with the default amount
+              console.log('Consume - Initial scan, will consume default amount...');
+              setTimeout(() => saveItem(it), 500); // Save after a short delay
+            }
+            
+            // Ignore any 'servings' in summary response to avoid prefill
+            // Now that we know the product id, persist current servings only if user changes
+            renderQueue();
+          }
+        } catch (_) {}
+      }
+
+      // Start with an empty queue and focus scanner input
+      updateScreenUnits(); // Initialize units display
+      renderQueue();
+      setTimeout(() => { try { barcodeInput.focus(); } catch (_) {} }, 0);
+
+      // =====================
+      // Recipe Search Functions
+      // =====================
+
+      function searchRecipes() {
+        const params = new URLSearchParams();
+
+        if (document.getElementById('filterCanBeMade').checked) {
+          params.append('can_be_made', 'true');
+        }
+
+        // Carbs percentile filter
+        const carbsPercentile = parseFloat(document.getElementById('filterCarbsMin').value);
+        if (carbsPercentile > 0 && recipeCarbsDensities.length > 0) {
+          if (carbsPercentile === 100) {
+            // Special case: At 100%, show only top 4 recipes
+            if (recipeCarbsDensities.length >= 4) {
+              const fourthHighest = recipeCarbsDensities[3].carbs_per_100cal;
+              params.append('min_carbs_per_100cal', fourthHighest);
+            } else if (recipeCarbsDensities.length > 0) {
+              // If less than 4 recipes, use the lowest value to get all of them
+              const lowest = recipeCarbsDensities[recipeCarbsDensities.length - 1].carbs_per_100cal;
+              params.append('min_carbs_per_100cal', lowest);
+            }
+          } else {
+            // Calculate the index for the given percentile
+            // carbsPercentile of 50 means top 50%, so we want that many recipes
+            // Number of recipes to show = ceil(percentile% * total)
+            // The threshold is the carbs value of the last recipe in that group
+            const numRecipesToShow = Math.ceil((carbsPercentile / 100) * recipeCarbsDensities.length);
+            if (numRecipesToShow > 0 && numRecipesToShow <= recipeCarbsDensities.length) {
+              const lastIndex = numRecipesToShow - 1;
+              const thresholdValue = recipeCarbsDensities[lastIndex].carbs_per_100cal;
+              params.append('min_carbs_per_100cal', thresholdValue);
+            }
+          }
+        }
+
+        // Protein percentile filter
+        const proteinPercentile = parseFloat(document.getElementById('filterProteinMin').value);
+        if (proteinPercentile > 0 && recipeProteinDensities.length > 0) {
+          if (proteinPercentile === 100) {
+            // Special case: At 100%, show only top 4 recipes
+            // We'll handle this by setting a very high threshold (get the 4th highest value)
+            if (recipeProteinDensities.length >= 4) {
+              const fourthHighest = recipeProteinDensities[3].protein_per_100cal;
+              params.append('min_protein_per_100cal', fourthHighest);
+            } else if (recipeProteinDensities.length > 0) {
+              // If less than 4 recipes, use the lowest value to get all of them
+              const lowest = recipeProteinDensities[recipeProteinDensities.length - 1].protein_per_100cal;
+              params.append('min_protein_per_100cal', lowest);
+            }
+          } else {
+            // Calculate the index for the given percentile
+            // proteinPercentile of 50 means top 50%, so we want that many recipes
+            // Number of recipes to show = ceil(percentile% * total)
+            // The threshold is the protein value of the last recipe in that group
+            const numRecipesToShow = Math.ceil((proteinPercentile / 100) * recipeProteinDensities.length);
+            if (numRecipesToShow > 0 && numRecipesToShow <= recipeProteinDensities.length) {
+              const lastIndex = numRecipesToShow - 1;
+              const thresholdValue = recipeProteinDensities[lastIndex].protein_per_100cal;
+              params.append('min_protein_per_100cal', thresholdValue);
+            }
+          }
+        }
+
+        // Time filters
+        const activeMax = parseInt(document.getElementById('filterActiveTimeMax').value);
+        if (activeMax < 45) params.append('max_active_time', activeMax);
+
+        const totalMax = parseInt(document.getElementById('filterTotalTimeMax').value);
+        if (totalMax < 45) params.append('max_total_time', totalMax);
+
+        // Fetch results
+        fetch(`/api/recipes/search?${params}`)
+          .then(r => r.json())
+          .then(data => {
+            const recipes = data.recipes || [];
+            document.getElementById('recipeCount').textContent = `(${recipes.length})`;
+
+            const grid = document.getElementById('recipesGrid');
+            grid.innerHTML = '';
+
+            recipes.forEach(recipe => {
+              const card = document.createElement('div');
+              card.className = 'recipeCard';
+              card.innerHTML = `
+                <div class="recipeName">
+                  ${recipe.name || 'Unnamed Recipe'}
+                  ${recipe.meal_plan_count > 0 ? `<span style="color: #4CAF50; font-weight: bold; margin-left: 8px;">(${recipe.meal_plan_count})</span>` : ''}
+                </div>
+                ${recipe.description ? `<div class="recipeDescription">${recipe.description}</div>` : ''}
+                <div class="recipeMacros">
+                  <div class="macroItem">
+                    <span class="value">${recipe.calories}</span>
+                    <span>cal</span>
+                  </div>
+                  <div class="macroItem">
+                    <span class="value">${recipe.carbs}g</span>
+                    <span>carbs</span>
+                  </div>
+                  <div class="macroItem">
+                    <span class="value">${recipe.fats}g</span>
+                    <span>fats</span>
+                  </div>
+                  <div class="macroItem">
+                    <span class="value">${recipe.protein}g</span>
+                    <span>protein</span>
+                  </div>
+                </div>
+                <div class="recipeTime">
+                  ${recipe.active_time ? `<span>Active: ${recipe.active_time} min</span>` : ''}
+                  ${recipe.total_time ? `<span>Total: ${recipe.total_time} min</span>` : ''}
+                </div>
+              `;
+              
+              // Add "Add to Today" button
+              const addButton = document.createElement('button');
+              addButton.textContent = 'Add to Today';
+              addButton.className = 'managerBtn';
+              addButton.style.cssText = 'width: 100%; margin-top: 12px; padding: 8px;';
+              addButton.onclick = () => addRecipeToToday(recipe.id, recipe.base_servings || 1, recipe.name, addButton);
+              card.appendChild(addButton);
+              
+              grid.appendChild(card);
+            });
+          })
+          .catch(err => {
+            console.error('Error searching recipes:', err);
+            alert('Error searching recipes');
+          });
+      }
+      
+      async function addRecipeToToday(recipeId, servings, recipeName, buttonElement) {
+        try {
+          // Disable button while processing
+          buttonElement.disabled = true;
+          buttonElement.textContent = 'Adding...';
+          
+          // Get current day from backend (respects custom day boundaries)
+          const daySummaryRes = await fetch('/api/macros/day-summary');
+          const daySummary = await daySummaryRes.json();
+          const today = daySummary.day; // Use day from backend which respects DAY_START_TIME
+          
+          // Add recipe to meal plan for today
+          const addRes = await fetch('/api/proxy/objects/meal_plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              day: today,
+              type: 'recipe',
+              recipe_id: recipeId,
+              recipe_servings: servings
+            })
+          });
+          
+          if (!addRes.ok) {
+            const errData = await addRes.json();
+            throw new Error(errData.error || 'Failed to add to meal plan');
+          }
+          
+          // Success - change button to green with confirmation
+          buttonElement.style.background = '#4CAF50';
+          buttonElement.textContent = `✓ Added (${servings} serving${servings !== 1 ? 's' : ''})`;
+          buttonElement.disabled = false;
+        } catch (err) {
+          console.error('Error adding recipe to meal plan:', err);
+          // Error - change button to red with error message
+          buttonElement.style.background = '#f44336';
+          buttonElement.textContent = '✗ Failed - Click to retry';
+          buttonElement.disabled = false;
+        }
+      }
+
+      // Update slider value displays
+      // Macro min sliders
+      ['Carbs', 'Protein'].forEach(macro => {
+        const slider = document.getElementById(`filter${macro}Min`);
+        const display = document.getElementById(`filter${macro}MinValue`);
+        if (slider && display) {
+          slider.addEventListener('input', () => {
+            display.textContent = slider.value;
+          });
+        }
+      });
+
+      // Time max sliders
+      ['ActiveTime', 'TotalTime'].forEach(time => {
+        const slider = document.getElementById(`filter${time}Max`);
+        const display = document.getElementById(`filter${time}MaxValue`);
+        if (slider && display) {
+          slider.addEventListener('input', () => {
+            display.textContent = slider.value;
+          });
+        }
+      });
+    </script>
+  </body>
+  </html>
+
+
+

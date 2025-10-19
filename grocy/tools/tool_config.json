@@ -1,0 +1,98 @@
+{
+  "GROCY_GET_Inventory": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_UPDATE_AddProductQuantity": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_UPDATE_ConsumeProduct": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_GET_Products": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_CreateProduct": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_CreatePlaceholder": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_GET_ShoppingList": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_AddToShoppingList": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_RemoveFromShoppingList": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_ClearShoppingList": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_GET_MealPlan": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_AddMealToPlan": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_MarkMealDone": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_DeleteMealPlanEntry": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_GET_Recipes": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_GET_Recipe": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_CreateRecipe": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_AddRecipeIngredient": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_GET_CookableRecipes": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_GET_DayMacros": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_CreateTempItem": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_DeleteTempItem": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  },
+  "GROCY_ACTION_SetProductPrice": {
+    "enabled_in_mcp": true,
+    "passthrough": false
+  }
+}
+
+
+
+

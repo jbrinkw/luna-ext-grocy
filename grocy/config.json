@@ -1,0 +1,20 @@
+{
+  "name": "grocy",
+  "version": "1.0.0",
+  "description": "Grocy inventory, meal planning, nutrition tracking, and shopping list management",
+  "required_secrets": [
+    "GROCY_BASE_URL",
+    "GROCY_API_KEY",
+    "GROCY_DEFAULT_LOCATION_ID",
+    "GROCY_DEFAULT_QU_ID_PURCHASE",
+    "GROCY_DEFAULT_QU_ID_STOCK",
+    "OPENAI_API_KEY",
+    "NUTRITIONIX_APP_ID",
+    "NUTRITIONIX_APP_KEY"
+  ],
+  "auto_update": false
+}
+
+
+
+
