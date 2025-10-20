@@ -169,6 +169,50 @@ Reference scripts in `scripts/` folder:
 - `scrape_walmart_search.py` - Search Walmart for products
 - `scrape_walmart_product.py` - Scrape Walmart product details
 
+## LangGraph Agent
+
+The extension includes a standalone LangGraph ReAct agent for natural language interaction. See `tools/README.md` for details.
+
+### Quick Start
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+export GROCY_BASE_URL=https://your-grocy-instance.com
+export GROCY_API_KEY=your_api_key
+export OPENAI_API_KEY=your_openai_key
+
+# Run interactive chat
+cd tools
+python agent.py
+
+# Or single-turn query
+python agent.py --question "what's in my inventory?"
+```
+
+### Features
+
+- **Interactive Chat**: Multi-turn conversations with context
+- **Single-Turn Mode**: Quick queries for automation
+- **Tool Call Logging**: See which tools were used and their results
+- **Flexible Model Selection**: Use any OpenAI model (gpt-4, gpt-4o-mini, etc.)
+
+Example conversations:
+```
+You: what's in my inventory?
+Agent: [Shows inventory with products, quantities, and expiry]
+
+You: add 2 milk to shopping list
+Agent: Added product to shopping list
+
+You: show me recipes I can make right now
+Agent: [Lists cookable recipes based on inventory]
+```
+
+See `tools/example_agent_usage.py` for programmatic usage examples.
+
 ## Integration with Luna Agents
 
 All tools are accessible to Luna agents via the standard tool interface. Example agent prompts:
@@ -188,24 +232,27 @@ All tools are accessible to Luna agents via the standard tool interface. Example
 
 ```
 grocy/
-├── config.json           # Extension manifest
-├── requirements.txt      # Python dependencies
-├── readme.md            # This file
-├── tools/               # Luna tool definitions
-│   ├── grocy_tools.py   # Tool implementations
-│   └── tool_config.json # MCP exposure settings
-├── lib/                 # Shared library code
-│   ├── core/           # GrocyClient
-│   ├── services/       # Domain services
-│   ├── integrations/   # External integrations
-│   ├── macro_tracking/ # Macro aggregation
-│   └── db.py          # Postgres connection
-├── ui/                  # Web interface
-│   ├── server.js       # Express server
-│   ├── start.sh        # Startup script
-│   ├── public/         # HTML/CSS/JS
-│   └── lib/           # Node.js modules
-└── scripts/            # Standalone utilities
+├── config.json              # Extension manifest
+├── requirements.txt         # Python dependencies
+├── readme.md               # This file
+├── tools/                  # Luna tool definitions
+│   ├── grocy_tools.py      # Tool implementations
+│   ├── tool_config.json    # MCP exposure settings
+│   ├── agent.py            # LangGraph ReAct agent
+│   ├── example_agent_usage.py  # Agent examples
+│   └── README.md           # Agent documentation
+├── lib/                    # Shared library code
+│   ├── core/              # GrocyClient
+│   ├── services/          # Domain services
+│   ├── integrations/      # External integrations
+│   ├── macro_tracking/    # Macro aggregation
+│   └── db.py             # Postgres connection
+├── ui/                     # Web interface
+│   ├── server.js          # Express server
+│   ├── start.sh           # Startup script
+│   ├── public/            # HTML/CSS/JS
+│   └── lib/              # Node.js modules
+└── scripts/               # Standalone utilities
 ```
 
 ### Library Modules

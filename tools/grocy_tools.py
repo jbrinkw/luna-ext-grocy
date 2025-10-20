@@ -19,11 +19,6 @@ if str(_lib_path) not in sys.path:
 
 # Import from lib modules
 from core.client import GrocyClient
-from services.inventory import InventoryService
-from services.products import ProductService  
-from services.shopping import ShoppingService
-from services.recipes import RecipeService
-from services.meal_plan import MealPlanService
 from services.userfields import UserfieldService
 from integrations.macros import get_day_macros, get_recent_days, create_temp_item, delete_temp_item
 
@@ -161,7 +156,7 @@ def GROCY_GET_Products() -> Tuple[bool, str]:
     """
     try:
         client = GrocyClient()
-        products = client.get_products()
+        products = client.list_all_products()
         result = []
         for p in products:
             pid = p.get("id")
@@ -274,7 +269,7 @@ def GROCY_GET_ShoppingList(shopping_list_id: int = 1) -> Tuple[bool, str]:
     try:
         _ = GROCY_GET_ShoppingListArgs(shopping_list_id=shopping_list_id)
         client = GrocyClient()
-        items = client.get_shopping_list(shopping_list_id=shopping_list_id)
+        items = client.get_shopping_list_items(shopping_list_id=shopping_list_id)
         result = []
         for item in items:
             product_id = item.get("product_id")
@@ -303,8 +298,7 @@ def GROCY_ACTION_AddToShoppingList(product_id: int, quantity: float = 1.0, shopp
     try:
         _ = GROCY_ACTION_AddToShoppingListArgs(product_id=product_id, quantity=quantity, shopping_list_id=shopping_list_id)
         client = GrocyClient()
-        shopping_service = ShoppingService(client)
-        shopping_service.add_product_to_shopping_list(product_id, quantity, shopping_list_id)
+        client.shopping_list_add_product(product_id, quantity, shopping_list_id)
         return (True, json.dumps({"status": "ok", "message": f"Added product {product_id} to shopping list"}))
     except Exception as e:
         return (False, f"Error adding to shopping list: {e}")
@@ -327,8 +321,7 @@ def GROCY_ACTION_RemoveFromShoppingList(product_id: int, quantity: float = 1.0, 
     try:
         _ = GROCY_ACTION_RemoveFromShoppingListArgs(product_id=product_id, quantity=quantity, shopping_list_id=shopping_list_id)
         client = GrocyClient()
-        shopping_service = ShoppingService(client)
-        shopping_service.remove_product_from_shopping_list(product_id, quantity, shopping_list_id)
+        client.shopping_list_remove_product(product_id, quantity, shopping_list_id)
         return (True, json.dumps({"status": "ok", "message": f"Removed product {product_id} from shopping list"}))
     except Exception as e:
         return (False, f"Error removing from shopping list: {e}")
@@ -349,8 +342,7 @@ def GROCY_ACTION_ClearShoppingList(shopping_list_id: int = 1) -> Tuple[bool, str
     try:
         _ = GROCY_ACTION_ClearShoppingListArgs(shopping_list_id=shopping_list_id)
         client = GrocyClient()
-        shopping_service = ShoppingService(client)
-        shopping_service.clear_shopping_list(shopping_list_id)
+        client.shopping_list_clear(shopping_list_id)
         return (True, json.dumps({"status": "ok", "message": "Cleared shopping list"}))
     except Exception as e:
         return (False, f"Error clearing shopping list: {e}")
@@ -374,7 +366,13 @@ def GROCY_GET_MealPlan(start: Optional[str] = None, end: Optional[str] = None) -
     try:
         _ = GROCY_GET_MealPlanArgs(start=start, end=end)
         client = GrocyClient()
-        entries = client.get_meal_plan(start=start, end=end)
+        
+        if start is None or end is None:
+            # If no date range specified, get all meal plan entries
+            entries = client.list_meal_plan()
+        else:
+            entries = client.get_meal_plan(start=start, end=end)
+        
         return (True, json.dumps(entries, ensure_ascii=False))
     except Exception as e:
         return (False, f"Error getting meal plan: {e}")
@@ -504,8 +502,7 @@ def GROCY_GET_Recipe(recipe_id: int) -> Tuple[bool, str]:
         client = GrocyClient()
         recipe = client.get_recipe(recipe_id)
         # Get ingredients
-        recipe_service = RecipeService(client)
-        ingredients = recipe_service.list_recipe_ingredients(recipe_id)
+        ingredients = client.list_recipe_ingredients(recipe_id)
         recipe["ingredients"] = ingredients
         return (True, json.dumps(recipe, ensure_ascii=False))
     except Exception as e:
@@ -560,8 +557,7 @@ def GROCY_ACTION_AddRecipeIngredient(recipe_id: int, product_id: int, amount: fl
         fields = {"recipe_id": recipe_id, "product_id": product_id, "amount": amount}
         if note:
             fields["note"] = note
-        recipe_service = RecipeService(client)
-        recipe_service.add_recipe_ingredient(fields)
+        client.add_recipe_ingredient(fields)
         return (True, json.dumps({"status": "ok", "message": "Added ingredient to recipe"}))
     except Exception as e:
         return (False, f"Error adding recipe ingredient: {e}")
@@ -581,7 +577,7 @@ def GROCY_GET_CookableRecipes() -> Tuple[bool, str]:
     """
     try:
         client = GrocyClient()
-        recipes = client.get_cookable_recipes()
+        recipes = client.list_cookable_recipes()
         return (True, json.dumps(recipes, ensure_ascii=False))
     except Exception as e:
         return (False, f"Error getting cookable recipes: {e}")
@@ -678,7 +674,7 @@ def GROCY_ACTION_SetProductPrice(product_id: int, price: float) -> Tuple[bool, s
         _ = GROCY_ACTION_SetProductPriceArgs(product_id=product_id, price=price)
         client = GrocyClient()
         # Use add/consume pattern to set price
-        client.add_product_quantity(product_id=product_id, quantity=1.0, price=price)
+        client.add_product_quantity_with_price(product_id=product_id, quantity=1.0, price=price)
         client.consume_product_quantity(product_id=product_id, quantity=1.0)
         return (True, json.dumps({"status": "ok", "message": f"Set price for product {product_id}"}))
     except Exception as e:
