@@ -18,9 +18,9 @@ if str(_lib_path) not in sys.path:
     sys.path.insert(0, str(_lib_path))
 
 # Import from lib modules
-from core.client import GrocyClient
-from services.userfields import UserfieldService
-from integrations.macros import get_day_macros, get_recent_days, create_temp_item, delete_temp_item
+from core.client import GrocyClient  # type: ignore
+from services.userfields import UserfieldService  # type: ignore
+from integrations.macros import get_day_macros, get_recent_days, create_temp_item, delete_temp_item  # type: ignore
 
 
 SYSTEM_PROMPT = """The user has access to Grocy inventory management tools for tracking food, recipes, meal plans, and shopping lists."""
@@ -118,7 +118,7 @@ def GROCY_UPDATE_ConsumeProduct(product_id: int, quantity: float, add_to_meal_pl
         
         if add_to_meal_plan:
             try:
-                from macro_tracking import day_utils
+                from macro_tracking import day_utils  # type: ignore
                 today = day_utils.get_current_day_timestamp()
                 product = client._get(f"/objects/products/{product_id}")
                 qu_id = product.get("qu_id_stock") or product.get("qu_id_purchase")
