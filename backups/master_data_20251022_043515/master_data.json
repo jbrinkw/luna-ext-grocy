@@ -1,0 +1,282 @@
+{
+  "locations": [
+    {
+      "id": 2,
+      "name": "Fridge",
+      "description": null,
+      "row_created_timestamp": "2025-09-02 02:31:53",
+      "is_freezer": 0,
+      "active": 1
+    },
+    {
+      "id": 3,
+      "name": "Freezer",
+      "description": null,
+      "row_created_timestamp": "2025-09-17 05:11:38",
+      "is_freezer": 1,
+      "active": 1
+    },
+    {
+      "id": 4,
+      "name": "Pantry",
+      "description": null,
+      "row_created_timestamp": "2025-09-17 05:11:51",
+      "is_freezer": 0,
+      "active": 1
+    }
+  ],
+  "stores": [],
+  "quantity_units": [
+    {
+      "id": 2,
+      "name": "Container",
+      "description": null,
+      "row_created_timestamp": "2025-09-02 02:31:53",
+      "name_plural": "Containers",
+      "plural_forms": null,
+      "active": 1
+    },
+    {
+      "id": 4,
+      "name": "Serving",
+      "description": null,
+      "row_created_timestamp": "2025-09-23 16:33:04",
+      "name_plural": "Servings",
+      "plural_forms": null,
+      "active": 1
+    }
+  ],
+  "product_groups": [],
+  "userfields": [
+    {
+      "id": 1,
+      "entity": "products",
+      "name": "walmart_link",
+      "caption": "walmart_link",
+      "type": "link",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-02 03:22:55",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 2,
+      "entity": "products",
+      "name": "Carbs",
+      "caption": "Carbs",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-21 01:09:10",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 3,
+      "entity": "products",
+      "name": "Protein",
+      "caption": "Protein",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-21 01:09:53",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 4,
+      "entity": "products",
+      "name": "Fats",
+      "caption": "Fats",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-21 01:10:17",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 5,
+      "entity": "products",
+      "name": "Calories_Per_Serving",
+      "caption": "Calories per Serving",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-21 01:11:09",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 6,
+      "entity": "products",
+      "name": "num_servings",
+      "caption": "Number of Servings",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-21 01:11:39",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 7,
+      "entity": "products",
+      "name": "Serving_Weight",
+      "caption": "Serving Weight (g)",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-21 01:12:35",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 8,
+      "entity": "recipes",
+      "name": "recipe_calories",
+      "caption": "Total Calories",
+      "type": "number-integral",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-24 17:35:40",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 9,
+      "entity": "recipes",
+      "name": "recipe_carbs",
+      "caption": "Grams of Carbs",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-24 17:37:11",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 10,
+      "entity": "recipes",
+      "name": "recipe_proteins",
+      "caption": "Grams of Protein",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-24 17:37:51",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 11,
+      "entity": "recipes",
+      "name": "recipe_fats",
+      "caption": "Grams of Fat",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-24 17:38:42",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 12,
+      "entity": "recipes",
+      "name": "recipe_active_time",
+      "caption": "Active Cook Time (Minutes)",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-24 19:29:50",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 13,
+      "entity": "recipes",
+      "name": "recipe_total_time",
+      "caption": "Total Cook Time (Minutes)",
+      "type": "number-decimal",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-24 19:30:27",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 15,
+      "entity": "products",
+      "name": "Calories_Per_Container",
+      "caption": "Calories per Container",
+      "type": "number-integral",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-09-24 21:30:08",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 16,
+      "entity": "products",
+      "name": "not_walmart",
+      "caption": "Not Walmart",
+      "type": "checkbox",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-10-10 18:26:57",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    },
+    {
+      "id": 17,
+      "entity": "products",
+      "name": "placeholder",
+      "caption": "Placeholder",
+      "type": "checkbox",
+      "show_as_column_in_tables": 0,
+      "row_created_timestamp": "2025-10-10 23:41:50",
+      "config": null,
+      "sort_number": null,
+      "input_required": 0,
+      "default_value": null
+    }
+  ],
+  "userentities": [],
+  "shopping_lists": [
+    {
+      "id": 1,
+      "name": "Shopping list",
+      "description": null,
+      "row_created_timestamp": "2025-09-02 02:31:54"
+    }
+  ],
+  "meal_plan_sections": [
+    {
+      "id": -1,
+      "name": null,
+      "sort_number": -1,
+      "row_created_timestamp": "2025-09-02 02:31:56",
+      "time_info": null
+    }
+  ],
+  "task_categories": [],
+  "batteries": [],
+  "equipment": [],
+  "chores": []
+}
